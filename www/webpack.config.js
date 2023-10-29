@@ -2,7 +2,7 @@
 const path = require("path")
 
 module.exports = {
-    entry: "./bootstrap.js",
+    entry: "./bootstrap.ts",
     output: {
         path: path.resolve(__dirname, "public"),
         filename: "bootstrap.js"
