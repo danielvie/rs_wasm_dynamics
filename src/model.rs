@@ -34,6 +34,23 @@ impl Model {
             states: State::new(),
         }
     }
+    
+    pub fn print(&self) {
+        println!("m1:         {}", self.m1);
+        println!("m2:         {}", self.m2);
+        println!("k:          {}", self.k);
+        println!("c:          {}", self.c);
+        println!("_amp:       {}", self._amp);
+        println!("_omega:     {}", self._omega);
+        println!("dt:         {}", self.dt);
+        println!("t:          {}", self.t);
+        println!("t_end       {}", self.t_end);
+        println!("_kp:        {}", self._kp);
+        println!("_ki:        {}", self._ki);
+        println!("_kd:        {}", self._kd);
+        println!("_step_time: {}", self._step_time);
+        println!("states:     {:?}", self.states);
+    }
 
     fn system_dynamics(&self, _t: f64, states: &State) -> State {
         let delta: f64 = states.x2 - states.x1;
