@@ -12,7 +12,8 @@
   "license": "ISC",
   "dependencies": {
     "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "mass_sim_dynamics": "file:../pkg"
   },
   "devDependencies": {
     "ts-loader": "^9.5.0",
