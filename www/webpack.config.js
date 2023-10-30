@@ -7,6 +7,10 @@ module.exports = {
         path: path.resolve(__dirname, "public"),
         filename: "bootstrap.js"
     },
+    devServer: {
+      host: '0.0.0.0',
+      port: 8001
+    },
     mode: "development",
     module: {
         rules: [
@@ -20,14 +24,4 @@ module.exports = {
       resolve: {
         extensions: ['.tsx', '.ts', '.js'],
       },
-    //   plugins: [
-    //     new CopyWebpackPlugin({
-    //       patterns: [
-    //         {
-    //           from: "./index.html",
-    //           to: "./",
-    //         },
-    //       ],
-    //     }),
-    //   ],
 }

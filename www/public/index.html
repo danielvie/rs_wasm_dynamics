@@ -5,31 +5,66 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
+
 </head>
-<body class="bg-gray-50 p-4">
+<body class="bg-gray-50 p-2">
 
     <div class="flex gap-2">
         <div>
             <span>x1:</span>
-            <input id="value-x1" class="bg-sky-200 rounded-sd w-9 px-2" type="text" value="5">
+            <input id="value-x1" class="bg-sky-50 border-2 border-gray-300 rounded-sd w-12 p-2" type="text" value="5">
         </div>
         <div>
             <span>x2:</span>
-            <input id="value-x2" class="bg-sky-200 rounded-sm w-9 px-2" type="text" value="0">
+            <input id="value-x2" class="bg-sky-50 border-2 border-gray-300 rounded-sm w-12 p-2" type="text" value="0">
         </div>
         <div>
             <span>m1:</span>
-            <input id="value-m1" class="bg-sky-200 rounded-sm w-9 px-2" type="text" value="1">
+            <input id="value-m1" class="bg-sky-50 border-2 border-gray-300 rounded-sm w-12 p-2" type="text" value="1">
         </div>
         <div>
             <span>m2:</span>
-            <input id="value-m2" class="bg-sky-200 rounded-sm w-9 px-2" type="text" value="1">
+            <input id="value-m2" class="bg-sky-50 border-2 border-gray-300 rounded-sm w-12 p-2" type="text" value="1">
+        </div>
+    </div>
+    <div class="flex gap-2 mt-2">
+        <div>
+            <span>c:</span>
+            <input id="value-c" class="bg-sky-50 border-2 border-gray-300 rounded-sd w-12 p-2" type="text" value="1">
+        </div>
+        <div>
+            <span>k:</span>
+            <input id="value-k" class="bg-sky-50 border-2 border-gray-300 rounded-sm w-12 p-2" type="text" value="1">
         </div>
     </div>
     <div class="text-red-800" id="timer">timer: </div>
     <canvas id="model-canvas" class="border-2 border-gray-300"></canvas>
+    <canvas id="myChart" class="border-2 border-gray-300"></canvas>
    
    <button id="ok-btn" class="bg-sky-800 mt-4 p-2 rounded-md text-gray-100 hover:bg-sky-700 w-16">ok</button>
    <script src="./bootstrap.js"></script>
+   <script>
+//         const ctx = document.getElementById('myChart')
+
+//         new Chart(ctx, {
+//     type: 'bar',
+//     data: {
+//       labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+//       datasets: [{
+//         label: '# of Votes',
+//         data: [12, 19, 3, 5, 2, 3],
+//         borderWidth: 1
+//       }]
+//     },
+//     options: {
+//       scales: {
+//         y: {
+//           beginAtZero: true
+//         }
+//       }
+//     }
+//   });
+   </script>
 </body>
 </html>

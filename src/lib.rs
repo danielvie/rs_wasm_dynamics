@@ -130,8 +130,12 @@ impl Model {
         }
     }
     
-    pub fn reset(&mut self, x1:f64, x2:f64, v1:f64, v2:f64) {
+    pub fn reset(&mut self, x1:f64, x2:f64, v1:f64, v2:f64, m1:f64, m2:f64, c:f64, k:f64) {
         self.t = 0.0;
         self.states = State::from(x1, x2, v1, v2);
+        self.m1 = m1;
+        self.m2 = m2;
+        self.c = c;
+        self.k = k;
     }
 }

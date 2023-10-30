@@ -1,87 +1,170 @@
-import init, { sum, Model, State } from "mass_sim_dynamics";
+import init, { Model, State } from "mass_sim_dynamics";
+import { Chart, registerables } from 'chart.js';
+
 
 init().then((_wasm) => {
+  const worldWidth = 350;
+  const worldHeight = 100;
+  const canvas = document.getElementById("model-canvas") as HTMLCanvasElement;
+  canvas.height = worldHeight;
+  canvas.width = worldWidth;
+  const ctx = canvas.getContext("2d");
 
-    const worldWidth = 400;
-    const worldHeight = 400;
-    const canvas = document.getElementById('model-canvas') as HTMLCanvasElement
-    canvas.height = worldHeight;
-    canvas.width = worldWidth;
-    const ctx = canvas.getContext("2d");
-    
-    const timer = document.getElementById('timer')
+  const timer = document.getElementById("timer");
 
-    function DrawBody(x:number, y:number, w:number, h:number, r:number) {
-        if (ctx) {
-            ctx.clearRect(x, y, w, h); // Clear the area before drawing
-        
-            ctx.beginPath();
-            ctx.moveTo(x + r, y);
-            ctx.lineTo(x + w - r, y);
-            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-            ctx.lineTo(x + w, y + h - r);
-            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-            ctx.lineTo(x + r, y + h);
-            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-            ctx.lineTo(x, y + r);
-            ctx.quadraticCurveTo(x, y, x + r, y);
-            ctx.closePath();
-        
-            ctx.fillStyle = "#2d61a1";
-            ctx.fill();
-          }
+  function DrawBody(x: number, y: number, w: number, h: number, r: number) {
+    if (ctx) {
+      ctx.clearRect(x, y, w, h); // Clear the area before drawing
+
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+
+      ctx.fillStyle = "#2d61a1";
+      ctx.fill();
     }
-    
-    function paint() {
-        DrawBody(100 + model.states.x1*10,20,40,40,2)
-        DrawBody(200 + model.states.x2*10,20,40,40,2)
-    }
+  }
 
-    function PrintMsg() {
-        const msg = `t: ${model.t}\nx1: ${model.states.x1}, x2: ${model.states.x2}`
-        console.log(msg)
-    }
-    
-    let x1_0 = 1.0;
-    let x2_0 = 0.0;
-    let v1_0 = 0.0;
-    let v2_0 = 0.0;
-    
-    const ok_btn = document.getElementById('ok-btn')
-    ok_btn?.addEventListener('click', () => {
-        x1_0 = parseFloat((document.getElementById('value-x1') as HTMLInputElement).value);
-        model.reset(x1_0, x2_0, v1_0, v2_0)
-    })
-    
-    document.addEventListener('keydown', (e) => {
+  function paint() {
+    DrawBody(100 + model.states.x1 * 10, 20, 40, 40, 2);
+    DrawBody(200 + model.states.x2 * 10, 20, 40, 40, 2);
+  }
 
-      switch (e.code) {
-        case "Space":
-            ok_btn?.click()
-            break;
+  let x1_0 = 1.0;
+  let x2_0 = 0.0;
+  let v1_0 = 0.0;
+  let v2_0 = 0.0;
+  let m1_0 = 1.0;
+  let m2_0 = 1.0;
+  let c = 1.0;
+  let k = 1.0;
+
+  const ok_btn = document.getElementById("ok-btn");
+  ok_btn?.addEventListener("click", () => {
+    x1_0 = parseFloat( (document.getElementById("value-x1") as HTMLInputElement).value);
+    x2_0 = parseFloat( (document.getElementById("value-x2") as HTMLInputElement).value);
+    m1_0 = parseFloat( (document.getElementById("value-m1") as HTMLInputElement).value);
+    m2_0 = parseFloat( (document.getElementById("value-m2") as HTMLInputElement).value);
+    c = parseFloat( (document.getElementById("value-c") as HTMLInputElement).value);
+    k = parseFloat( (document.getElementById("value-k") as HTMLInputElement).value);
+
+    model.reset(x1_0, x2_0, v1_0, v2_0, m1_0, m2_0, c, k);
+    // resetChart()
+    
+    if (dataX1) {
+      updateChart(0,0,0)
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    switch (e.code) {
+      case "Space":
+        ok_btn?.click();
+        break;
+    }
+  });
+
+  let model = Model.new();
+  model.states = State.from(x1_0, x2_0, v1_0, v2_0);
+
+  function play() {
+    const fps = 100;
+    setTimeout(() => {
+      // Clear the canvas at the beginning of each frame
+      ctx?.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (timer) {
+        timer.innerText = `timer: ${model.time()}`;
       }
 
-    })
+      model.stepn(30);
+      paint();
+
+      updateChart(model.time(), model.states.x1, model.states.x2)
+
+      requestAnimationFrame(play);
+    }, 1000 / fps);
+  }
+
+  play();
+
+
+  // Chart.register(CategoryScale, LinearScale, Title, Tooltip, BarController);
+  Chart.register(...registerables);
+
+  // Initialize an empty array for data
+  const dataX1:number[] = []
+  const dataX2:number[] = []
+  const labels:string[] = []
+  
+  // Create the initial chart
+  const ctx_ = document.getElementById("myChart") as HTMLCanvasElement;
+  const chart = new Chart(ctx_, {
+    type: "line",
+    data: {
+      // labels: labels,
+      datasets: [
+        {
+          label: 'X1',
+          data: dataX1,
+          borderWidth: 1,
+        },
+        {
+          label: 'X2',
+          data: dataX2,
+          fill: "#235fd1",
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          // suggestedMax: 10,
+          // suggestedMin: -10,
+        },
+      },
+    },
+  });
+  
+
+  let max = -1
+  let min = 1
+  function updateChart(t: number, x1: number, x2: number) {
     
-    let model    = Model.new()
-    model.states = State.from(x1_0, x2_0, v1_0, v2_0)
-
-    function play() {
-      const fps = 100;
-      setTimeout(() => {
-        // Clear the canvas at the beginning of each frame
-        ctx?.clearRect(0, 0, canvas.width, canvas.height);
-
-        if (timer) {
-          timer.innerText = `timer: ${model.time()}`;
-        }
-
-        model.stepn(30)
-        paint()
-
-        requestAnimationFrame(play);
-      }, 1000 / fps);
+    t = Math.floor(t)
+    
+    dataX1.push(x1)
+    dataX2.push(x2)
+    labels.push(`${t}`)
+    
+    if (dataX1.length > 200) {
+      dataX1.shift()
+      dataX2.shift()
+      labels.shift()
     }
     
-    play()
+    chart.data.datasets[0].data = dataX1
+    chart.data.labels = labels
+
+    max = Math.max(...dataX1, max)
+    min = Math.min(...dataX1, min)
+    
+    if (chart.options.scales?.y) {
+      chart.options.scales.y.suggestedMax = max
+      chart.options.scales.y.suggestedMin = min
+    }
+
+    chart.update('none')
+  }
+
 })
