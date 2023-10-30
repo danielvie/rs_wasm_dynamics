@@ -11,6 +11,8 @@ init().then((_wasm) => {
   const ctx = canvas.getContext("2d");
 
   const timer = document.getElementById("timer");
+  let stepn = parseFloat((document.getElementById("value-stepn") as HTMLInputElement).value) || 30;
+  let numel = parseFloat((document.getElementById("value-numel") as HTMLInputElement).value) || 200;
 
   function DrawBody(x: number, y: number, w: number, h: number, r: number) {
     if (ctx) {
@@ -48,7 +50,12 @@ init().then((_wasm) => {
   let k = 1.0;
 
   const ok_btn = document.getElementById("ok-btn");
+
   ok_btn?.addEventListener("click", () => {
+    OK()
+  });
+  
+  function OK() {
     x1_0 = parseFloat( (document.getElementById("value-x1") as HTMLInputElement).value);
     x2_0 = parseFloat( (document.getElementById("value-x2") as HTMLInputElement).value);
     m1_0 = parseFloat( (document.getElementById("value-m1") as HTMLInputElement).value);
@@ -57,12 +64,14 @@ init().then((_wasm) => {
     k = parseFloat( (document.getElementById("value-k") as HTMLInputElement).value);
 
     model.reset(x1_0, x2_0, v1_0, v2_0, m1_0, m2_0, c, k);
-    // resetChart()
+    
+    stepn = parseFloat((document.getElementById("value-stepn") as HTMLInputElement).value) || 30;
+    numel = parseFloat((document.getElementById("value-numel") as HTMLInputElement).value) || 200;
     
     if (dataX1) {
-      updateChart(0,0,0)
+      updateChart(model.time(),model.states.x1,model.states.x2)
     }
-  });
+  }
 
   document.addEventListener("keydown", (e) => {
     switch (e.code) {
@@ -85,7 +94,7 @@ init().then((_wasm) => {
         timer.innerText = `timer: ${model.time()}`;
       }
 
-      model.stepn(30);
+      model.stepn(stepn);
       paint();
 
       updateChart(model.time(), model.states.x1, model.states.x2)
@@ -115,13 +124,15 @@ init().then((_wasm) => {
         {
           label: 'X1',
           data: dataX1,
-          borderWidth: 1,
+          borderWidth: 2,
+          pointRadius: 0
         },
         {
           label: 'X2',
           data: dataX2,
           fill: "#235fd1",
-          borderWidth: 1,
+          borderWidth: 2,
+          pointRadius: 0
         },
       ],
     },
@@ -147,7 +158,7 @@ init().then((_wasm) => {
     dataX2.push(x2)
     labels.push(`${t}`)
     
-    if (dataX1.length > 200) {
+    while (dataX1.length > numel) {
       dataX1.shift()
       dataX2.shift()
       labels.shift()
