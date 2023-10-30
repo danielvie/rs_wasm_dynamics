@@ -11,8 +11,11 @@ init().then((_wasm) => {
   const ctx = canvas.getContext("2d");
 
   const timer = document.getElementById("timer");
-  let stepn = parseFloat((document.getElementById("value-stepn") as HTMLInputElement).value) || 30;
-  let numel = parseFloat((document.getElementById("value-numel") as HTMLInputElement).value) || 200;
+  // let stepn = parseFloat((document.getElementById("value-stepn") as HTMLInputElement).value) || 30;
+  // let numel = parseFloat((document.getElementById("value-numel") as HTMLInputElement).value) || 200;
+
+  let stepn = 30;
+  let numel = 200;
 
   function DrawBody(x: number, y: number, w: number, h: number, r: number) {
     if (ctx) {
@@ -51,6 +54,7 @@ init().then((_wasm) => {
 
   const ok_btn = document.getElementById("ok-btn");
   const resety_btn = document.getElementById("reset-y-btn");
+  const controlon_btn = document.getElementById("control-on-btn");
 
   ok_btn?.addEventListener("click", () => {
     OK()
@@ -59,15 +63,30 @@ init().then((_wasm) => {
   resety_btn?.addEventListener("click", () => {
     ResetY()
   });
+
+  controlon_btn?.addEventListener("click", () => {
+    ControlON()
+  });
   
-  function OK() {
+  function UpdateValues() {
     x1_0 = parseFloat( (document.getElementById("value-x1") as HTMLInputElement).value);
     x2_0 = parseFloat( (document.getElementById("value-x2") as HTMLInputElement).value);
     m1_0 = parseFloat( (document.getElementById("value-m1") as HTMLInputElement).value);
     m2_0 = parseFloat( (document.getElementById("value-m2") as HTMLInputElement).value);
     c = parseFloat( (document.getElementById("value-c") as HTMLInputElement).value);
     k = parseFloat( (document.getElementById("value-k") as HTMLInputElement).value);
-
+    
+    model.t = 0.0
+    model.states.x1 = x1_0
+    model.states.x2 = x2_0
+    model.m1 = m1_0
+    model.m2 = m2_0
+    model.c = c
+    model.k = k
+  }
+  
+  function OK() {
+    UpdateValues()
     model.reset(x1_0, x2_0, v1_0, v2_0, m1_0, m2_0, c, k);
     // model.states = State.from(x1_0, x2_0, v1_0, v2_0);
     // model.m1 = m1_0;
@@ -77,17 +96,39 @@ init().then((_wasm) => {
     
     // console.log(model.c)
     
-    stepn = parseFloat((document.getElementById("value-stepn") as HTMLInputElement).value) || 30;
-    numel = parseFloat((document.getElementById("value-numel") as HTMLInputElement).value) || 200;
+    // stepn = parseFloat((document.getElementById("value-stepn") as HTMLInputElement).value) || 30;
+    // numel = parseFloat((document.getElementById("value-numel") as HTMLInputElement).value) || 200;
+
+    stepn = 30;
+    numel = 200;
     
     if (dataX1) {
-      updateChart(model.time(),model.states.x1,model.states.x2)
+      updateChart()
     }
   }
   
   function ResetY() {
     max = Math.max(...dataX1)
     min = Math.min(...dataX1)
+  }
+  
+  function ControlON() {
+
+    UpdateValues()
+    
+    console.log(model.m1, model.m2)
+
+    const kp = parseFloat( (document.getElementById("value-kp") as HTMLInputElement).value);
+    const ki = parseFloat( (document.getElementById("value-ki") as HTMLInputElement).value);
+    const kd = parseFloat( (document.getElementById("value-kd") as HTMLInputElement).value);
+    const setpoint = parseFloat( (document.getElementById("value-setpoint") as HTMLInputElement).value);
+
+    model.m_kp = kp
+    model.m_ki = ki
+    model.m_kd = kd
+    model.m_setpoint = setpoint
+    model.m_controle_on = true
+    console.log('control on', model.m_controle_on)
   }
 
   document.addEventListener("keydown", (e) => {
@@ -108,13 +149,13 @@ init().then((_wasm) => {
       ctx?.clearRect(0, 0, canvas.width, canvas.height);
 
       if (timer) {
-        timer.innerText = `timer: ${model.time()}`;
+        timer.innerText = `t: ${model.time()}`;
       }
 
       model.stepn(stepn);
       paint();
 
-      updateChart(model.time(), model.states.x1, model.states.x2)
+      updateChart()
 
       requestAnimationFrame(play);
     }, 1000 / fps);
@@ -157,6 +198,15 @@ init().then((_wasm) => {
     },
     options: {
       responsive: true,
+      plugins: {
+        legend: {
+          labels: {
+            font: {
+              family: "monospace"
+            }
+          }
+        }
+      },
       scales: {
         y: {
           // suggestedMax: 10,
@@ -170,10 +220,12 @@ init().then((_wasm) => {
 
   let max = -1
   let min = 1
-  function updateChart(t: number, x1: number, x2: number) {
+  function updateChart() {
     
-    t = Math.floor(t)
-    
+    const t  = Math.floor(model.time())
+    const x1 = model.states.x1
+    const x2 = model.states.x2
+
     dataX1.push(x1)
     dataX2.push(x2)
     labels.push(`${t}`)
@@ -194,6 +246,13 @@ init().then((_wasm) => {
       chart.options.scales.y.suggestedMax = max
       chart.options.scales.y.suggestedMin = min
     }
+    
+    // update label
+    const str_x1 = (x1 > 0.0) ? ` ${x1.toFixed(2)}` : `${x1.toFixed(2)}`
+    const str_x2 = (x2 > 0.0) ? ` ${x2.toFixed(2)}` : `${x2.toFixed(2)}`
+
+    chart.data.datasets[0].label = `x1(${str_x1})`
+    chart.data.datasets[1].label = `x2(${str_x2})`
 
     chart.update('none')
   }

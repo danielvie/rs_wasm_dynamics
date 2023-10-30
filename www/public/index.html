@@ -3,52 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Simulation Mass-Spring</title>
     <link rel="stylesheet" href="styles.css">
     <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
 
 </head>
-<body class="bg-gray-50 p-2 font-mono">
+<body class="bg-gray-50 p-1 font-mono">
     <div class="m-1">
-        v.0.2
+        v.0.3
     </div>
-    <div class="flex gap-2">
-        <div class="w-1/6 text-right">
+    <div class="flex gap-1 text-xs">
+        <div class="w-11 text-right">
             <span>x1:</span>
-            <input id="value-x1" class="bg-sky-50 border-2 border-gray-300 rounded-sd w-12 p-2" type="text" value="5">
+            <input id="value-x1" class="bg-sky-50 border-2 border-gray-300 rounded-sd w-10 p-2" type="text" value="5">
         </div>
-        <div class="w-1/6 text-right">
+        <div class="w-11 text-right">
             <span>x2:</span>
-            <input id="value-x2" class="bg-sky-50 border-2 border-gray-300 rounded-sm w-12 p-2" type="text" value="0">
+            <input id="value-x2" class="bg-sky-50 border-2 border-gray-300 rounded-sm w-10 p-2" type="text" value="0">
         </div>
-        <div class="w-1/6 text-right">
+        <div class="w-11 text-right">
             <span>m1:</span>
-            <input id="value-m1" class="bg-sky-50 border-2 border-gray-300 rounded-sm w-12 p-2" type="text" value="1">
+            <input id="value-m1" class="bg-sky-50 border-2 border-gray-300 rounded-sm w-10 p-2" type="text" value="1">
         </div>
-        <div class="w-1/6 text-right">
+        <div class="w-11 text-right">
             <span>m2:</span>
-            <input id="value-m2" class="bg-sky-50 border-2 border-gray-300 rounded-sm w-12 p-2" type="text" value="1">
+            <input id="value-m2" class="bg-sky-50 border-2 border-gray-300 rounded-sm w-10 p-2" type="text" value="1">
         </div>
-    </div>
-    <div class="flex gap-2 mt-2">
-        <div class="w-1/6 text-right">
+        <div class="w-11 text-right">
             <span>c:</span>
-            <input id="value-c" class="bg-sky-50 border-2 border-gray-300 rounded-sd w-12 p-2" type="text" value="0.1">
+            <input id="value-c" class="bg-sky-50 border-2 border-gray-300 rounded-sd w-10 p-2" type="text" value="0.1">
         </div>
-        <div class="w-1/6 text-right">
+        <div class="w-11 text-right">
             <span>k:</span>
-            <input id="value-k" class="bg-sky-50 border-2 border-gray-300 rounded-sm w-12 p-2" type="text" value="1">
-        </div>
-        <div class="w-1/6 text-right">
-            <span>step_n:</span>
-            <input id="value-stepn" class="bg-sky-50 border-2 border-gray-300 rounded-sm w-12 p-2" type="text" value="30">
-        </div>
-        <div class="w-1/6 text-right">
-            <span>numel:</span>
-            <input id="value-numel" class="bg-sky-50 border-2 border-gray-300 rounded-sm w-12 p-2" type="text" value="200">
+            <input id="value-k" class="bg-sky-50 border-2 border-gray-300 rounded-sm w-10 p-2" type="text" value="1">
         </div>
     </div>
-    <div class="text-red-800" id="timer">timer: </div>
+    <div class="flex gap-1 mt-2 text-xs">
+        <div class="w-11 text-right">
+            <span>kp:</span>
+            <input id="value-kp" class="bg-sky-50 border-2 border-gray-300 rounded-sd w-10 p-2" type="text" value="3">
+        </div>
+        <div class="w-11 text-right">
+            <span>ki:</span>
+            <input id="value-ki" class="bg-sky-50 border-2 border-gray-300 rounded-sm w-10 p-2" type="text" value="0.5">
+        </div>
+        <div class="w-11 text-right">
+            <span>kd:</span>
+            <input id="value-kd" class="bg-sky-50 border-2 border-gray-300 rounded-sm w-10 p-2" type="text" value="20">
+        </div>
+        <div class="w-11 text-right">
+            <span>ref:</span>
+            <input id="value-setpoint" class="bg-sky-50 border-2 border-gray-300 rounded-sm w-10 p-2" type="text" value="1">
+        </div>
+    </div>
+    <div class="text-red-800 mt-2" id="timer">timer: </div>
     <div class="">
         <canvas id="model-canvas" class="border-2 border-gray-300"></canvas>
     </div>
@@ -58,6 +66,7 @@
    
    <button id="ok-btn" class="bg-sky-800 mt-4 p-2 rounded-md text-gray-100 hover:bg-sky-700 w-16">ok</button>
    <button id="reset-y-btn" class="bg-sky-800 mt-4 p-2 rounded-md text-gray-100 hover:bg-sky-700 w-28">reset y</button>
+   <button id="control-on-btn" class="bg-sky-800 mt-4 p-2 rounded-md text-gray-100 hover:bg-sky-700 w-32">control on</button>
    <script src="./bootstrap.js"></script>
    <script>
 //         const ctx = document.getElementById('myChart')

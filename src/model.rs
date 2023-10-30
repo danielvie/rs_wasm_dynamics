@@ -18,7 +18,7 @@ impl State {
 }
 
 pub struct Model {
-    m1: f64, m2: f64, k: f64, c: f64, _amp: f64, _omega: f64, dt: f64, 
+    pub m1: f64, m2: f64, k: f64, c: f64, _amp: f64, _omega: f64, dt: f64, 
     pub t: f64, pub t_end: f64, 
     _kp: f64, _ki: f64, _kd: f64,
     _step_time: f64,

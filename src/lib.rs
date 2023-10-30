@@ -44,11 +44,16 @@ impl State {
 
 #[wasm_bindgen]
 pub struct Model {
-    m1: f64, m2: f64, k: f64, c: f64, _amp: f64, _omega: f64, dt: f64, 
+    pub m1: f64, pub m2: f64, pub k: f64, pub c: f64, _amp: f64, _omega: f64, pub dt: f64, 
     pub t: f64, pub t_end: f64, 
     _kp: f64, _ki: f64, _kd: f64,
     _step_time: f64,
-    pub states: State ,
+    pub states: State,
+
+    // pid
+    m_integral: f64, m_prev_error: f64, pub m_setpoint: f64, pub m_controle_on: bool,
+    pub m_dt: f64,
+    pub m_ki: f64, pub m_kp: f64, pub m_kd: f64,
 }
 
 #[wasm_bindgen]
@@ -59,7 +64,27 @@ impl Model {
             _kp: 3.0, _ki: 0.5, _kd: 10.0,
             _step_time: 2.0,
             states: State::new(),
+
+            m_integral: 0.0, m_prev_error: 0.0, m_setpoint: 1.0, m_controle_on: false, 
+            m_dt: 0.01, 
+            m_ki: 1.0, m_kp: 0.0, m_kd: 0.0, 
         }
+    }
+    
+    pub fn pid_compute(&mut self) -> f64 {
+        let error:f64 = self.m_setpoint - self.states.x1;
+        self.m_integral +=  error * self.m_dt;
+        let derivative:f64 = -self.states.v1;
+    
+        let mut u:f64= self.m_kp * error + self.m_ki * self.m_integral + self.m_kd * derivative;
+    
+        self.m_prev_error = error;
+        
+        if self.m_controle_on == false {
+            u = u * 0.0;
+        }
+    
+        return u;
     }
     
     pub fn print(&self) -> String {
@@ -84,26 +109,30 @@ impl Model {
     pub fn time(&self) -> f64 {
         (self.t * 100.0).round() / 100.0
     }
-
-    fn system_dynamics(&self, _t: f64, states: &State) -> State {
+    
+    fn system_dynamics(&mut self, _t: f64, states: &State) -> State {
         let delta: f64 = states.x2 - states.x1;
     
         // let ref_: f64 = 1.0;
-        // let F1: f64 = m_pid->compute(ref, states);
+        let f1: f64 = self.pid_compute();
         
         // emulate step reference signal
         // if (m_t > m_step_time) {
         //     m_pid->enable(true);
         // }
+
+        if self.m_controle_on {
+            // alert(&self.m_controle_on.to_string());
+        }
     
         // let a1: f64 = (-m_k*states.x1 - m_c*states.v1 + m_k*delta + m_c*(states.v2 - states.v1) + F1) / m_M1;
-        let a1: f64 = (-self.k*states.x1 - self.c*states.v1 + self.k*delta + self.c*(states.v2 - states.v1)) / self.m1;
+        let a1: f64 = (-self.k*states.x1 - self.c*states.v1 + self.k*delta + self.c*(states.v2 - states.v1) + f1) / self.m1;
         let a2: f64 = (-self.k*delta - self.c*(states.v2 - states.v1)) / self.m2;
         
         State {x1: states.v1, x2: states.v2, v1: a1, v2: a2}
     }
     
-    fn runge_kutta(&self, t: f64, states: &State) -> State {
+    fn runge_kutta(&mut self, t: f64, states: &State) -> State {
     
         let dt: f64 = self.dt;
         let k1: State = self.system_dynamics(t, states);
@@ -120,7 +149,7 @@ impl Model {
     }
     
     pub fn step(&mut self) {
-        self.states = self.runge_kutta(self.t, &self.states);
+        self.states = self.runge_kutta(self.t, &self.states.clone());
         self.t += self.dt;
     }
     
