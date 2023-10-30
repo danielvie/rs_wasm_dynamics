@@ -113,6 +113,11 @@ init().then((_wasm) => {
   }
   
   function ControlON() {
+    if (!controlon_btn) { return }
+    
+    controlon_btn.classList.remove("bg-red-800")
+    controlon_btn.classList.add("bg-sky-800")
+    controlon_btn.innerText = "SET control"
 
     UpdateValues()
     
