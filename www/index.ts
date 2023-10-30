@@ -50,9 +50,14 @@ init().then((_wasm) => {
   let k = 1.0;
 
   const ok_btn = document.getElementById("ok-btn");
+  const resety_btn = document.getElementById("reset-y-btn");
 
   ok_btn?.addEventListener("click", () => {
     OK()
+  });
+
+  resety_btn?.addEventListener("click", () => {
+    ResetY()
   });
   
   function OK() {
@@ -64,6 +69,13 @@ init().then((_wasm) => {
     k = parseFloat( (document.getElementById("value-k") as HTMLInputElement).value);
 
     model.reset(x1_0, x2_0, v1_0, v2_0, m1_0, m2_0, c, k);
+    // model.states = State.from(x1_0, x2_0, v1_0, v2_0);
+    // model.m1 = m1_0;
+    // model.m2 = m2_0;
+    // model.c = c;
+    // model.k = k;
+    
+    // console.log(model.c)
     
     stepn = parseFloat((document.getElementById("value-stepn") as HTMLInputElement).value) || 30;
     numel = parseFloat((document.getElementById("value-numel") as HTMLInputElement).value) || 200;
@@ -71,6 +83,11 @@ init().then((_wasm) => {
     if (dataX1) {
       updateChart(model.time(),model.states.x1,model.states.x2)
     }
+  }
+  
+  function ResetY() {
+    max = Math.max(...dataX1)
+    min = Math.min(...dataX1)
   }
 
   document.addEventListener("keydown", (e) => {
@@ -116,6 +133,8 @@ init().then((_wasm) => {
   
   // Create the initial chart
   const ctx_ = document.getElementById("myChart") as HTMLCanvasElement;
+  ctx_.width = 200
+  ctx_.height = 200
   const chart = new Chart(ctx_, {
     type: "line",
     data: {
@@ -146,6 +165,7 @@ init().then((_wasm) => {
       },
     },
   });
+  
   
 
   let max = -1

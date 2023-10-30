@@ -31,7 +31,7 @@
     <div class="flex gap-2 mt-2">
         <div>
             <span>c:</span>
-            <input id="value-c" class="bg-sky-50 border-2 border-gray-300 rounded-sd w-12 p-2" type="text" value="1">
+            <input id="value-c" class="bg-sky-50 border-2 border-gray-300 rounded-sd w-12 p-2" type="text" value="0.1">
         </div>
         <div>
             <span>k:</span>
@@ -47,10 +47,13 @@
         </div>
     </div>
     <div class="text-red-800" id="timer">timer: </div>
-    <canvas id="model-canvas" class="border-2 border-gray-300"></canvas>
-    <canvas id="myChart" class="border-2 border-gray-300"></canvas>
+    <canvas id="model-canvas" class="mt-2 border-2 border-gray-300"></canvas>
+    <div class="w-[22em] h-[22em] mt-2">
+        <canvas id="myChart" class="border-2 border-gray-300"></canvas>
+    </div>
    
    <button id="ok-btn" class="bg-sky-800 mt-4 p-2 rounded-md text-gray-100 hover:bg-sky-700 w-16">ok</button>
+   <button id="reset-y-btn" class="bg-sky-800 mt-4 p-2 rounded-md text-gray-100 hover:bg-sky-700 w-20">reset y</button>
    <script src="./bootstrap.js"></script>
    <script>
 //         const ctx = document.getElementById('myChart')
