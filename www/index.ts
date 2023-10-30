@@ -17,7 +17,7 @@ init().then((_wasm) => {
   let stepn = 30;
   let numel = 200;
 
-  function DrawBody(x: number, y: number, w: number, h: number, r: number) {
+  function DrawBody(x: number, y: number, w: number, h: number, r: number, fill: string) {
     if (ctx) {
       ctx.clearRect(x, y, w, h); // Clear the area before drawing
 
@@ -33,14 +33,14 @@ init().then((_wasm) => {
       ctx.quadraticCurveTo(x, y, x + r, y);
       ctx.closePath();
 
-      ctx.fillStyle = "#2d61a1";
+      ctx.fillStyle = fill;
       ctx.fill();
     }
   }
 
   function paint() {
-    DrawBody(100 + model.states.x1 * 10, 20, 40, 40, 2);
-    DrawBody(200 + model.states.x2 * 10, 20, 40, 40, 2);
+    DrawBody(100 + model.states.x1 * 10, 20, 40, 40, 2, "#2d61a1");
+    DrawBody(200 + model.states.x2 * 10, 20, 40, 40, 2, "#fa6384");
   }
 
   let x1_0 = 1.0;
