@@ -3,11 +3,11 @@ import { Chart, registerables } from 'chart.js';
 
 
 init().then((_wasm) => {
-  const worldWidth = 350;
-  const worldHeight = 100;
+  // const worldWidth = 350;
+  // const worldHeight = 100;
   const canvas = document.getElementById("model-canvas") as HTMLCanvasElement;
-  canvas.height = worldHeight;
-  canvas.width = worldWidth;
+  canvas.height = 100;
+  canvas.width = 350;
   const ctx = canvas.getContext("2d");
 
   const timer = document.getElementById("timer");
@@ -133,8 +133,6 @@ init().then((_wasm) => {
   
   // Create the initial chart
   const ctx_ = document.getElementById("myChart") as HTMLCanvasElement;
-  ctx_.width = 200
-  ctx_.height = 200
   const chart = new Chart(ctx_, {
     type: "line",
     data: {
