@@ -132,8 +132,10 @@ init().then((_wasm) => {
   const labels:string[] = []
   
   // Create the initial chart
-  const ctx_ = document.getElementById("myChart") as HTMLCanvasElement;
-  const chart = new Chart(ctx_, {
+  const canvasg = document.getElementById("myChart") as HTMLCanvasElement;
+  canvasg.width = 300
+  canvasg.height = 250
+  const chart = new Chart(canvasg, {
     type: "line",
     data: {
       // labels: labels,
