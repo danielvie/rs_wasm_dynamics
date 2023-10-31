@@ -83,8 +83,7 @@ init().then((_wasm) => {
   });
 
   paramset_btn?.addEventListener("click", () => {
-    UpdateValues()
-    ControlSet()
+    UpdateParams()
   });
 
   controlflip_btn?.addEventListener("click", () => {
@@ -98,7 +97,7 @@ init().then((_wasm) => {
     const setpoint = parseFloat(in_setpoint.value);
     in_setpoint.value = `${-setpoint}`
 
-    ControlSet()
+    UpdateParams()
   }
   
   function UpdateParams() {
