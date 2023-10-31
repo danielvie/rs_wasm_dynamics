@@ -67,7 +67,8 @@ init().then((_wasm) => {
   const reset_btn = document.getElementById("ok-btn");
   const fity_btn = document.getElementById("fit-y-btn");
   const controlon_btn = document.getElementById("control-on-btn");
-  const controloset_btn = document.getElementById("control-set-btn");
+  const controlset_btn = document.getElementById("control-set-btn");
+  const controlflip_btn = document.getElementById("control-flip-btn");
 
   reset_btn?.addEventListener("click", () => {
     Reset()
@@ -81,9 +82,23 @@ init().then((_wasm) => {
     ControlTOGGLE()
   });
 
-  controloset_btn?.addEventListener("click", () => {
+  controlset_btn?.addEventListener("click", () => {
     ControlSet()
   });
+
+  controlflip_btn?.addEventListener("click", () => {
+    ControlFlip()
+  });
+  
+  function ControlFlip() {
+    const in_setpoint = document.getElementById("value-setpoint") as HTMLInputElement
+    if (!in_setpoint) { return }
+
+    const setpoint = parseFloat(in_setpoint.value);
+    in_setpoint.value = `${-setpoint}`
+
+    ControlSet()
+  }
   
   function UpdateValues() {
     x1_0 = parseFloat( (document.getElementById("value-x1") as HTMLInputElement).value);
@@ -93,7 +108,6 @@ init().then((_wasm) => {
     c = parseFloat( (document.getElementById("value-c") as HTMLInputElement).value);
     k = parseFloat( (document.getElementById("value-k") as HTMLInputElement).value);
     
-    model.t = 0.0
     model.states.x1 = x1_0
     model.states.x2 = x2_0
     model.m1 = m1_0
@@ -104,6 +118,7 @@ init().then((_wasm) => {
   
   function Reset() {
     UpdateValues()
+    model.t = 0.0
     model.reset(x1_0, x2_0, v1_0, v2_0, m1_0, m2_0, c, k);
     ControlON(false)
 
@@ -112,8 +127,6 @@ init().then((_wasm) => {
     // model.m2 = m2_0;
     // model.c = c;
     // model.k = k;
-    
-    // console.log(model.c)
     
     // stepn = parseFloat((document.getElementById("value-stepn") as HTMLInputElement).value) || 30;
     // numel = parseFloat((document.getElementById("value-numel") as HTMLInputElement).value) || 200;
@@ -132,30 +145,37 @@ init().then((_wasm) => {
   }
   
   function ControlON(value:boolean) {
-    if (!controlon_btn || !controloset_btn) { return }
+    if (!controlon_btn || !controlset_btn || !controlflip_btn) { return }
 
     if (value) {
       controlon_btn.classList.remove("bg-red-800")
       controlon_btn.classList.add("bg-sky-800")
       controlon_btn.innerText = "control ON"
-      model.m_controle_on = true
 
-      controloset_btn.classList.remove("bg-red-800")
-      controloset_btn.classList.add("bg-sky-800")
+      controlset_btn.classList.remove("bg-red-800")
+      controlset_btn.classList.add("bg-sky-800")
+
+      controlflip_btn.classList.remove("bg-red-800")
+      controlflip_btn.classList.add("bg-sky-800")
+
+      model.m_controle_on = true
     } else {
       controlon_btn.classList.remove("bg-sky-800")
       controlon_btn.classList.add("bg-red-800")
       controlon_btn.innerText = "control OFF"
 
-      controloset_btn.classList.remove("bg-sky-800")
-      controloset_btn.classList.add("bg-red-800")
+      controlset_btn.classList.remove("bg-sky-800")
+      controlset_btn.classList.add("bg-red-800")
+
+      controlflip_btn.classList.remove("bg-sky-800")
+      controlflip_btn.classList.add("bg-red-800")
 
       model.m_controle_on = false
     }
   }
 
   function ControlTOGGLE() {
-    if (!controlon_btn || !controloset_btn) { return }
+    if (!controlon_btn || !controlset_btn) { return }
     
     if (!model.m_controle_on) {
       ControlON(true)
@@ -165,9 +185,6 @@ init().then((_wasm) => {
 
     UpdateValues()
     ControlSet()
-    
-    console.log(model.m1, model.m2)
-    console.log('control on', model.m_controle_on)
   }
   
   function ControlSet() {
