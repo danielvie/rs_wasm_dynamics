@@ -6,7 +6,7 @@ init().then((_wasm) => {
   // const worldWidth = 350;
   // const worldHeight = 100;
   const canvas = document.getElementById("model-canvas") as HTMLCanvasElement;
-  canvas.height = 100;
+  canvas.height = 120;
   canvas.width = 350;
   const ctx = canvas.getContext("2d");
 
@@ -36,6 +36,17 @@ init().then((_wasm) => {
     ctx.fill();
   }
   
+  function DrawArrow(addr: string, x: number) {
+    const img = new Image()
+    img.src = addr
+    
+    const scale = 0.12
+    const dx = img.width * scale
+    const dy = img.height * scale
+
+    ctx?.drawImage(img, x, 20, dx, dy)
+  }
+  
   function DrawSetP(x: number) {
     if (!ctx) { return }
     
@@ -50,7 +61,12 @@ init().then((_wasm) => {
   function paint() {
     ctx?.clearRect(0, 0, canvas.width, canvas.height); // Clear the area before drawing
 
+    x1_0 = parseFloat((document.getElementById("value-x1") as HTMLInputElement).value);
+    x2_0 = parseFloat((document.getElementById("value-x2") as HTMLInputElement).value);
+
     DrawSetP(100 + model.m_setpoint * 10)
+    DrawArrow("arrow_x1.png", 100)
+    DrawArrow("arrow_x2.png", 200)
     DrawBody(100 + model.states.x1 * 10, 20, 40, 40, 2, "#2d61a1");
     DrawBody(200 + model.states.x2 * 10, 20, 40, 40, 2, "#fa6384");
   }
