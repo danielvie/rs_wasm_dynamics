@@ -101,6 +101,11 @@ init().then((_wasm) => {
     ControlSet()
   }
   
+  function UpdateParams() {
+    UpdateValues()
+    ControlSet()
+  }
+  
   function UpdateValues() {
     x1_0 = parseFloat( (document.getElementById("value-x1") as HTMLInputElement).value);
     x2_0 = parseFloat( (document.getElementById("value-x2") as HTMLInputElement).value);
@@ -204,6 +209,7 @@ init().then((_wasm) => {
 
   let model = Model.new();
   model.states = State.from(x1_0, x2_0, v1_0, v2_0);
+  UpdateParams()
 
   function play() {
     const fps = 100;
@@ -261,7 +267,7 @@ init().then((_wasm) => {
           pointRadius: 0
         },
         {
-          label: 'setp',
+          label: 'ref',
           data: dataSet,
           fill: "#bbb",
           borderWidth: 1,
@@ -275,8 +281,10 @@ init().then((_wasm) => {
         legend: {
           labels: {
             font: {
-              family: "monospace"
-            }
+              family: "monospace",
+              size: 11,
+            },
+            boxWidth: 15,
           }
         }
       },
@@ -324,11 +332,15 @@ init().then((_wasm) => {
     }
     
     // update label
-    const str_x1 = (x1 > 0.0) ? ` ${x1.toFixed(2)}` : `${x1.toFixed(2)}`
-    const str_x2 = (x2 > 0.0) ? ` ${x2.toFixed(2)}` : `${x2.toFixed(2)}`
+    const ref = model.m_setpoint
+
+    const str_x1  = (x1 > 0.0) ? ` ${x1.toFixed(1)}` : `${x1.toFixed(1)}`
+    const str_x2  = (x2 > 0.0) ? ` ${x2.toFixed(1)}` : `${x2.toFixed(1)}`
+    const str_ref = (ref > 0.0) ? ` ${ref.toFixed(1)}` : `${ref.toFixed(1)}`
 
     chart.data.datasets[0].label = `x1(${str_x1})`
     chart.data.datasets[1].label = `x2(${str_x2})`
+    chart.data.datasets[2].label = `ref(${str_ref})`
 
     chart.update('none')
   }
