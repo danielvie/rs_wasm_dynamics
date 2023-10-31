@@ -167,8 +167,6 @@ init().then((_wasm) => {
     ControlSet()
     
     console.log(model.m1, model.m2)
-
-
     console.log('control on', model.m_controle_on)
   }
   
@@ -206,10 +204,12 @@ init().then((_wasm) => {
       }
 
       model.stepn(stepn);
+      
+      // if (model.m_controle_on)
+      
+      
       paint();
-
       updateChart()
-
       requestAnimationFrame(play);
     }, 1000 / fps);
   }

@@ -113,17 +113,16 @@ impl Model {
     fn system_dynamics(&mut self, _t: f64, states: &State) -> State {
         let delta: f64 = states.x2 - states.x1;
     
-        // let ref_: f64 = 1.0;
-        let f1: f64 = self.pid_compute();
+        // compute control
+        let mut f1: f64 = 0.0;
+        if self.m_controle_on {
+            f1 = self.pid_compute();
+        }
         
         // emulate step reference signal
         // if (m_t > m_step_time) {
         //     m_pid->enable(true);
         // }
-
-        if self.m_controle_on {
-            // alert(&self.m_controle_on.to_string());
-        }
     
         // let a1: f64 = (-m_k*states.x1 - m_c*states.v1 + m_k*delta + m_c*(states.v2 - states.v1) + F1) / m_M1;
         let a1: f64 = (-self.k*states.x1 - self.c*states.v1 + self.k*delta + self.c*(states.v2 - states.v1) + f1) / self.m1;
