@@ -34,18 +34,18 @@ pub struct State {
 #[wasm_bindgen]
 impl State {
     pub fn new() -> State {
-       State { x1: 0.0, x2: 0.0, v1: 0.0, v2: 0.0 } 
+       State { x1: 0.0, x2: 0.0, v1: 0.0, v2: 0.0 }
     }
 
     pub fn from(x1:f64, x2:f64, v1:f64, v2:f64) -> State {
-       State { x1, x2, v1, v2 } 
+       State { x1, x2, v1, v2 }
     }
 }
 
 #[wasm_bindgen]
 pub struct Model {
-    pub m1: f64, pub m2: f64, pub k: f64, pub c: f64, _amp: f64, _omega: f64, pub dt: f64, 
-    pub t: f64, pub t_end: f64, 
+    pub m1: f64, pub m2: f64, pub k: f64, pub c: f64, _amp: f64, _omega: f64, pub dt: f64,
+    pub t: f64, pub t_end: f64,
     _kp: f64, _ki: f64, _kd: f64,
     _step_time: f64,
     pub states: State,
@@ -65,9 +65,9 @@ impl Model {
             _step_time: 2.0,
             states: State::new(),
 
-            m_integral: 0.0, m_prev_error: 0.0, m_setpoint: 1.0, m_controle_on: false, 
-            m_dt: 0.01, 
-            m_ki: 1.0, m_kp: 0.0, m_kd: 0.0, 
+            m_integral: 0.0, m_prev_error: 0.0, m_setpoint: 1.0, m_controle_on: false,
+            m_dt: 0.01,
+            m_ki: 1.0, m_kp: 0.0, m_kd: 0.0,
         }
     }
     

@@ -55,6 +55,7 @@ init().then((_wasm) => {
   const ok_btn = document.getElementById("ok-btn");
   const resety_btn = document.getElementById("reset-y-btn");
   const controlon_btn = document.getElementById("control-on-btn");
+  const controloset_btn = document.getElementById("control-set-btn");
 
   ok_btn?.addEventListener("click", () => {
     OK()
@@ -65,7 +66,11 @@ init().then((_wasm) => {
   });
 
   controlon_btn?.addEventListener("click", () => {
-    ControlON()
+    ControlTOGGLE()
+  });
+
+  controloset_btn?.addEventListener("click", () => {
+    ControlSet()
   });
   
   function UpdateValues() {
@@ -112,17 +117,39 @@ init().then((_wasm) => {
     min = Math.min(...dataX1)
   }
   
-  function ControlON() {
-    if (!controlon_btn) { return }
+  function ControlTOGGLE() {
+    if (!controlon_btn || !controloset_btn) { return }
     
-    controlon_btn.classList.remove("bg-red-800")
-    controlon_btn.classList.add("bg-sky-800")
-    controlon_btn.innerText = "SET control"
+    if (!model.m_controle_on) {
+      controlon_btn.classList.remove("bg-red-800")
+      controlon_btn.classList.add("bg-sky-800")
+      controlon_btn.innerText = "control ON"
+      model.m_controle_on = true
+
+      controloset_btn.classList.remove("bg-red-800")
+      controloset_btn.classList.add("bg-sky-800")
+
+    } else {
+      controlon_btn.classList.remove("bg-sky-800")
+      controlon_btn.classList.add("bg-red-800")
+      controlon_btn.innerText = "control OFF"
+
+      controloset_btn.classList.remove("bg-sky-800")
+      controloset_btn.classList.add("bg-red-800")
+
+      model.m_controle_on = false
+    }
 
     UpdateValues()
+    ControlSet()
     
     console.log(model.m1, model.m2)
 
+
+    console.log('control on', model.m_controle_on)
+  }
+  
+  function ControlSet() {
     const kp = parseFloat( (document.getElementById("value-kp") as HTMLInputElement).value);
     const ki = parseFloat( (document.getElementById("value-ki") as HTMLInputElement).value);
     const kd = parseFloat( (document.getElementById("value-kd") as HTMLInputElement).value);
@@ -132,8 +159,6 @@ init().then((_wasm) => {
     model.m_ki = ki
     model.m_kd = kd
     model.m_setpoint = setpoint
-    model.m_controle_on = true
-    console.log('control on', model.m_controle_on)
   }
 
   document.addEventListener("keydown", (e) => {
