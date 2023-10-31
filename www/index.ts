@@ -18,27 +18,39 @@ init().then((_wasm) => {
   let numel = 200;
 
   function DrawBody(x: number, y: number, w: number, h: number, r: number, fill: string) {
-    if (ctx) {
-      ctx.clearRect(x, y, w, h); // Clear the area before drawing
+    if (!ctx) { return }
 
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-      ctx.lineTo(x + w, y + h - r);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      ctx.lineTo(x + r, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
 
-      ctx.fillStyle = fill;
-      ctx.fill();
-    }
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
+  
+  function DrawSetP(x: number) {
+    if (!ctx) { return }
+    
+    ctx.strokeStyle = "#fccd9d"
+    ctx.beginPath()
+    ctx.moveTo(x, -50)
+    ctx.lineTo(x,  100)
+    ctx.closePath()
+    ctx.stroke()
   }
 
   function paint() {
+    ctx?.clearRect(0, 0, canvas.width, canvas.height); // Clear the area before drawing
+
+    DrawSetP(100 + model.m_setpoint * 10)
     DrawBody(100 + model.states.x1 * 10, 20, 40, 40, 2, "#2d61a1");
     DrawBody(200 + model.states.x2 * 10, 20, 40, 40, 2, "#fa6384");
   }
@@ -200,6 +212,7 @@ init().then((_wasm) => {
   // Initialize an empty array for data
   const dataX1:number[] = []
   const dataX2:number[] = []
+  const dataSet:number[] = []
   const labels:string[] = []
   
   // Create the initial chart
@@ -222,6 +235,13 @@ init().then((_wasm) => {
           data: dataX2,
           fill: "#235fd1",
           borderWidth: 2,
+          pointRadius: 0
+        },
+        {
+          label: 'setp',
+          data: dataSet,
+          fill: "#bbb",
+          borderWidth: 1,
           pointRadius: 0
         },
       ],
@@ -255,14 +275,17 @@ init().then((_wasm) => {
     const t  = Math.floor(model.time())
     const x1 = model.states.x1
     const x2 = model.states.x2
+    const setp = model.m_setpoint
 
     dataX1.push(x1)
     dataX2.push(x2)
+    dataSet.push(setp)
     labels.push(`${t}`)
     
     while (dataX1.length > numel) {
       dataX1.shift()
       dataX2.shift()
+      dataSet.shift()
       labels.shift()
     }
     
