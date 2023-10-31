@@ -173,17 +173,11 @@ init().then((_wasm) => {
       controlon_btn.classList.add("bg-sky-800")
       controlon_btn.innerText = "control ON"
 
-      controlflip_btn.classList.remove("bg-red-800")
-      controlflip_btn.classList.add("bg-sky-800")
-
       model.m_controle_on = true
     } else {
       controlon_btn.classList.remove("bg-sky-800")
       controlon_btn.classList.add("bg-red-800")
       controlon_btn.innerText = "control OFF"
-
-      controlflip_btn.classList.remove("bg-sky-800")
-      controlflip_btn.classList.add("bg-red-800")
 
       model.m_controle_on = false
     }
