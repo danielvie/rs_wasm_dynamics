@@ -52,8 +52,9 @@ init().then((_wasm) => {
     
     ctx.strokeStyle = "#fccd9d"
     ctx.beginPath()
-    ctx.moveTo(x, -50)
-    ctx.lineTo(x,  100)
+    ctx.lineWidth = 3
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x,  canvas.height)
     ctx.closePath()
     ctx.stroke()
   }
