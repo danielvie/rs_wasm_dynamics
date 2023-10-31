@@ -64,17 +64,17 @@ init().then((_wasm) => {
   let c = 1.0;
   let k = 1.0;
 
-  const ok_btn = document.getElementById("ok-btn");
-  const resety_btn = document.getElementById("reset-y-btn");
+  const reset_btn = document.getElementById("ok-btn");
+  const fity_btn = document.getElementById("fit-y-btn");
   const controlon_btn = document.getElementById("control-on-btn");
   const controloset_btn = document.getElementById("control-set-btn");
 
-  ok_btn?.addEventListener("click", () => {
-    OK()
+  reset_btn?.addEventListener("click", () => {
+    Reset()
   });
 
-  resety_btn?.addEventListener("click", () => {
-    ResetY()
+  fity_btn?.addEventListener("click", () => {
+    FitY()
   });
 
   controlon_btn?.addEventListener("click", () => {
@@ -102,9 +102,11 @@ init().then((_wasm) => {
     model.k = k
   }
   
-  function OK() {
+  function Reset() {
     UpdateValues()
     model.reset(x1_0, x2_0, v1_0, v2_0, m1_0, m2_0, c, k);
+    ControlON(false)
+
     // model.states = State.from(x1_0, x2_0, v1_0, v2_0);
     // model.m1 = m1_0;
     // model.m2 = m2_0;
@@ -124,15 +126,15 @@ init().then((_wasm) => {
     }
   }
   
-  function ResetY() {
+  function FitY() {
     max = Math.max(...dataX1)
     min = Math.min(...dataX1)
   }
   
-  function ControlTOGGLE() {
+  function ControlON(value:boolean) {
     if (!controlon_btn || !controloset_btn) { return }
-    
-    if (!model.m_controle_on) {
+
+    if (value) {
       controlon_btn.classList.remove("bg-red-800")
       controlon_btn.classList.add("bg-sky-800")
       controlon_btn.innerText = "control ON"
@@ -140,7 +142,6 @@ init().then((_wasm) => {
 
       controloset_btn.classList.remove("bg-red-800")
       controloset_btn.classList.add("bg-sky-800")
-
     } else {
       controlon_btn.classList.remove("bg-sky-800")
       controlon_btn.classList.add("bg-red-800")
@@ -150,6 +151,16 @@ init().then((_wasm) => {
       controloset_btn.classList.add("bg-red-800")
 
       model.m_controle_on = false
+    }
+  }
+
+  function ControlTOGGLE() {
+    if (!controlon_btn || !controloset_btn) { return }
+    
+    if (!model.m_controle_on) {
+      ControlON(true)
+    } else {
+      ControlON(false)
     }
 
     UpdateValues()
@@ -176,7 +187,7 @@ init().then((_wasm) => {
   document.addEventListener("keydown", (e) => {
     switch (e.code) {
       case "Space":
-        ok_btn?.click();
+        reset_btn?.click();
         break;
     }
   });
