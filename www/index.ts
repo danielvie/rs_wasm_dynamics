@@ -13,9 +13,34 @@ init().then((_wasm) => {
   const timer = document.getElementById("timer");
   // let stepn = parseFloat((document.getElementById("value-stepn") as HTMLInputElement).value) || 30;
   // let numel = parseFloat((document.getElementById("value-numel") as HTMLInputElement).value) || 200;
+  
+  const BLUE = "#517acc"
+  const PINK = "#fa6384"
 
-  let stepn = 30;
+  let stepn = 20;
   let numel = 200;
+
+  function DrawGrid() {
+    if (!ctx) { return }
+    
+    ctx.beginPath()
+    
+    ctx.strokeStyle = "#e0e0e0"
+    ctx.lineWidth = 1
+
+    const grid = 10
+    let x = 0
+    let y = 0
+
+    while (x < canvas.width) {
+      x += grid
+      ctx.moveTo(x, 0)
+      ctx.lineTo(x, canvas.height)
+    }
+
+    ctx.closePath()
+    ctx.stroke()
+  }
 
   function DrawBody(x: number, y: number, w: number, h: number, r: number, fill: string) {
     if (!ctx) { return }
@@ -36,27 +61,78 @@ init().then((_wasm) => {
     ctx.fill();
   }
   
-  function DrawArrow(addr: string, x: number) {
-    const img = new Image()
-    img.src = addr
-    
-    const scale = 0.12
-    const dx = img.width * scale
-    const dy = img.height * scale
+  function DrawArrow(name: string, x: number, color: string) {
+    if (!ctx) { return }
 
-    ctx?.drawImage(img, x, 20, dx, dy)
+    ctx.strokeStyle = color
+    ctx.lineWidth = 2
+
+    ctx.beginPath()
+    
+    const dy = 20
+
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x, canvas.height)
+    ctx.moveTo(x, canvas.height - dy)
+    ctx.lineTo(x + 20, canvas.height - dy)
+
+    ctx.lineTo(x + 10, canvas.height - dy - 10)
+
+    ctx.moveTo(x + 20, canvas.height - dy)
+    ctx.lineTo(x + 10, canvas.height - dy + 10)
+
+    ctx.closePath()
+    ctx.stroke()
+    
+    ctx.beginPath()
+    ctx.fillStyle = color
+    ctx.font = "20px monospace"
+    ctx.fillText(name, x + 25, canvas.height - dy + 5)
   }
-  
-  function DrawSetP(x: number) {
+
+  function DrawRef(x: number) {
     if (!ctx) { return }
     
     ctx.strokeStyle = "#fccd9d"
-    ctx.beginPath()
     ctx.lineWidth = 3
-    ctx.moveTo(x, 0)
-    ctx.lineTo(x,  canvas.height)
+    ctx.beginPath()
+
+    const drie = 10
+    ctx.moveTo(x-drie, 0)
+    ctx.lineTo(x, drie)
+    ctx.lineTo(x+drie, 0)
+
+
+    ctx.lineWidth =  2
+    let y = drie
+    const spacing = 5
+    const line =15
+    
+    while (y < canvas.height) {
+      y += spacing
+      ctx.moveTo(x, y)
+      y += line
+      ctx.lineTo(x, y)
+    }
+    
     ctx.closePath()
     ctx.stroke()
+
+    ctx.beginPath()
+    ctx.clearRect(x-drie, canvas.height - drie, drie*2, drie)
+    ctx.closePath()
+    ctx.fill()
+
+    ctx.beginPath()
+
+
+
+    ctx.closePath()
+    ctx.moveTo(x-drie, canvas.height)
+    ctx.lineTo(x, canvas.height - drie)
+    ctx.lineTo(x+drie, canvas.height)
+    ctx.stroke()
+
   }
 
   function paint() {
@@ -65,11 +141,12 @@ init().then((_wasm) => {
     x1_0 = parseFloat((document.getElementById("value-x1") as HTMLInputElement).value);
     x2_0 = parseFloat((document.getElementById("value-x2") as HTMLInputElement).value);
 
-    DrawSetP(100 + model.m_setpoint * 10)
-    DrawArrow("arrow_x1.png", 100)
-    DrawArrow("arrow_x2.png", 200)
-    DrawBody(100 + model.states.x1 * 10, 20, 40, 40, 2, "#2d61a1");
-    DrawBody(200 + model.states.x2 * 10, 20, 40, 40, 2, "#fa6384");
+    DrawGrid()
+    DrawRef(100 + model.m_setpoint * 10)
+    DrawArrow("x1", 100, BLUE)
+    DrawArrow("x2", 200, PINK)
+    DrawBody(100 + model.states.x1 * 10, 20, 40, 40, 2, BLUE);
+    DrawBody(200 + model.states.x2 * 10, 20, 40, 40, 2, PINK);
   }
 
   let x1_0 = 1.0;
@@ -118,11 +195,8 @@ init().then((_wasm) => {
   }
   
   function UpdateParams() {
-    UpdateValues()
-    ControlSet()
-  }
-  
-  function UpdateValues() {
+    
+    // update values
     x1_0 = parseFloat( (document.getElementById("value-x1") as HTMLInputElement).value);
     x2_0 = parseFloat( (document.getElementById("value-x2") as HTMLInputElement).value);
     m1 = parseFloat( (document.getElementById("value-m1") as HTMLInputElement).value);
@@ -136,24 +210,26 @@ init().then((_wasm) => {
     model.m2 = m2
     model.c = c
     model.k = k
+
+    // update control
+    const kp = parseFloat( (document.getElementById("value-kp") as HTMLInputElement).value);
+    const ki = parseFloat( (document.getElementById("value-ki") as HTMLInputElement).value);
+    const kd = parseFloat( (document.getElementById("value-kd") as HTMLInputElement).value);
+    const setpoint = parseFloat( (document.getElementById("value-setpoint") as HTMLInputElement).value);
+
+    model.m_kp = kp
+    model.m_ki = ki
+    model.m_kd = kd
+    model.m_setpoint = setpoint
   }
   
   function Reset() {
-    UpdateValues()
+    UpdateParams()
     model.t = 0.0
     model.reset(x1_0, x2_0, v1_0, v2_0, m1, m2, c, k);
     ControlON(false)
 
-    // model.states = State.from(x1_0, x2_0, v1_0, v2_0);
-    // model.m1 = m1_0;
-    // model.m2 = m2_0;
-    // model.c = c;
-    // model.k = k;
-    
-    // stepn = parseFloat((document.getElementById("value-stepn") as HTMLInputElement).value) || 30;
-    // numel = parseFloat((document.getElementById("value-numel") as HTMLInputElement).value) || 200;
-
-    stepn = 30;
+    stepn = 40;
     numel = 200;
     
     if (dataX1) {
@@ -193,22 +269,9 @@ init().then((_wasm) => {
       ControlON(false)
     }
 
-    UpdateValues()
-    ControlSet()
+    UpdateParams()
   }
   
-  function ControlSet() {
-    const kp = parseFloat( (document.getElementById("value-kp") as HTMLInputElement).value);
-    const ki = parseFloat( (document.getElementById("value-ki") as HTMLInputElement).value);
-    const kd = parseFloat( (document.getElementById("value-kd") as HTMLInputElement).value);
-    const setpoint = parseFloat( (document.getElementById("value-setpoint") as HTMLInputElement).value);
-
-    model.m_kp = kp
-    model.m_ki = ki
-    model.m_kd = kd
-    model.m_setpoint = setpoint
-  }
-
   document.addEventListener("keydown", (e) => {
     switch (e.code) {
       case "Space":
@@ -222,19 +285,15 @@ init().then((_wasm) => {
   UpdateParams()
 
   function play() {
-    const fps = 100;
+    const fps = 100
     setTimeout(() => {
-      // Clear the canvas at the beginning of each frame
       ctx?.clearRect(0, 0, canvas.width, canvas.height);
 
       if (timer) {
-        timer.innerText = `t: ${model.time()}`;
+        timer.innerText = `t: ${model.time().toFixed(1)}`;
       }
 
       model.stepn(stepn);
-      
-      // if (model.m_controle_on)
-      
       
       paint();
       updateChart()
