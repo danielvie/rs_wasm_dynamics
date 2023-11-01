@@ -25,6 +25,7 @@ init().then((_wasm) => {
     
     // params
     ctx.strokeStyle = color
+    ctx.lineWidth = 2
 
     // draw spring 
     let L = (xright - xleft)
@@ -62,6 +63,7 @@ init().then((_wasm) => {
     
     // params
     ctx.strokeStyle = color
+    ctx.lineWidth = 2
 
     // draw spring 
     let L = (xright - xleft)
@@ -188,11 +190,25 @@ init().then((_wasm) => {
     ctx.strokeStyle = color
     ctx.lineWidth = 2
 
-    ctx.beginPath()
-    
+    const groundTop = 20 + 40 + 5 * 2
+    const groundBottom = 20 + 40 + 5 * 2 + 7
     const dy = 20
 
-    ctx.moveTo(x, 0)
+    ctx.beginPath()
+    
+    let yi = 0
+    const spacing = 5
+    const line = 8
+    while(yi < groundTop) {
+      ctx.moveTo(x, yi)
+      yi += line
+      
+      yi = Math.min(yi, groundTop-1)
+      ctx.lineTo(x, yi)
+      yi += spacing
+    }
+
+    ctx.moveTo(x, groundBottom)
     ctx.lineTo(x, canvas.height)
     ctx.moveTo(x, canvas.height - dy)
     ctx.lineTo(x + 20, canvas.height - dy)
@@ -209,6 +225,7 @@ init().then((_wasm) => {
     ctx.fillStyle = color
     ctx.font = "20px monospace"
     ctx.fillText(name, x + 25, canvas.height - dy + 5)
+    
   }
 
   function DrawRef(x: number) {
@@ -217,19 +234,21 @@ init().then((_wasm) => {
     ctx.strokeStyle = "#fccd9d"
     ctx.lineWidth = 3
     ctx.beginPath()
+    
+    const bottom = 20 + 40 + 5 * 2
 
-    const drie = 10
+    const drie = 5
     ctx.moveTo(x-drie, 0)
     ctx.lineTo(x, drie)
     ctx.lineTo(x+drie, 0)
 
 
-    ctx.lineWidth =  2
+    ctx.lineWidth =  3
     let y = drie
     const spacing = 5
     const line =15
     
-    while (y < canvas.height) {
+    while (y < bottom) {
       y += spacing
       ctx.moveTo(x, y)
       y += line
@@ -240,19 +259,17 @@ init().then((_wasm) => {
     ctx.stroke()
 
     ctx.beginPath()
-    ctx.clearRect(x-drie, canvas.height - drie, drie*2, drie)
+    ctx.clearRect(x-drie, bottom, drie*2, drie*4)
+    // ctx.rect(x-drie, bottom, drie*2, drie*4)
     ctx.closePath()
     ctx.fill()
 
-    ctx.beginPath()
-
-
-
-    ctx.closePath()
-    ctx.moveTo(x-drie, canvas.height)
-    ctx.lineTo(x, canvas.height - drie)
-    ctx.lineTo(x+drie, canvas.height)
-    ctx.stroke()
+    // ctx.beginPath()
+    // ctx.closePath()
+    // ctx.moveTo(x-drie, bottom)
+    // ctx.lineTo(x, bottom - drie)
+    // ctx.lineTo(x+drie, bottom)
+    // ctx.stroke()
 
   }
 
