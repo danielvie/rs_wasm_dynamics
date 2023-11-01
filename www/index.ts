@@ -19,6 +19,79 @@ init().then((_wasm) => {
 
   let stepn = 20;
   let numel = 200;
+  
+  function DrawSpring(xleft: number, xright: number, color: string) {
+    if (!ctx) { return }
+    
+    // params
+    ctx.strokeStyle = color
+
+    // draw spring 
+    let L = (xright - xleft)
+    let w = 20 * L / 100
+    
+    let left = (L - w) / 2.0 + xleft
+    let right = left + w
+
+    const y  = 30.0
+    const dy = 5.0
+    const dx = w/12.0
+
+    ctx.beginPath()
+    ctx.moveTo(left, y)
+
+    ctx.lineTo(left +  1*dx, y-dy)
+    ctx.lineTo(left +  3*dx, y+dy)
+    ctx.lineTo(left +  5*dx, y-dy)
+    ctx.lineTo(left +  7*dx, y+dy)
+    ctx.lineTo(left +  9*dx, y-dy)
+    ctx.lineTo(left + 11*dx, y+dy)
+    ctx.lineTo(left + 12*dx, y)
+    
+    ctx.moveTo(xleft, y)
+    ctx.lineTo(left, y)
+    ctx.moveTo(right, y)
+    ctx.lineTo(xright, y)
+
+    ctx.closePath()
+    ctx.stroke()
+  }
+
+  function DrawDamper(xleft: number, xright: number, color: string) {
+    if (!ctx) { return }
+    
+    // params
+    ctx.strokeStyle = color
+
+    // draw spring 
+    let L = (xright - xleft)
+    let w = 15
+    
+    let left = (L - w) / 2.0 + xleft
+    let right = left + w
+
+    const y  = 50.0
+    const dy = 5.0
+    const dx = w/2.0
+
+    ctx.beginPath()
+    ctx.moveTo(right, y + dy)
+    ctx.lineTo(left, y + dy)
+    ctx.lineTo(left, y - dy)
+    ctx.lineTo(right, y - dy)
+
+    ctx.moveTo(left + dx, y + dy)
+    ctx.lineTo(left + dx, y - dy)
+    
+    ctx.moveTo(xleft, y)
+    ctx.lineTo(left, y)
+
+    ctx.moveTo(right - dx, y)
+    ctx.lineTo(xright, y)
+
+    ctx.closePath()
+    ctx.stroke()
+  }
 
   function DrawGrid() {
     if (!ctx) { return }
@@ -45,6 +118,35 @@ init().then((_wasm) => {
   function DrawBody(x: number, y: number, w: number, h: number, r: number, fill: string) {
     if (!ctx) { return }
 
+    // ground
+    const radius = 5
+    const ground = y + h + radius * 2
+
+    ctx.beginPath()
+    ctx.strokeStyle = "#777"
+    ctx.moveTo(0, ground)
+    ctx.lineTo(canvas.width, ground)
+    ctx.closePath()
+    ctx.stroke()
+    
+    ctx.beginPath()
+    ctx.lineWidth = 1
+    
+    let xi = 0
+    while (xi < canvas.width) {
+      ctx.moveTo(xi, ground)
+      ctx.lineTo(xi - 8, ground + 7)
+      
+      xi += 5 
+    }
+
+    ctx.closePath()
+    ctx.stroke()
+
+
+    // rounded box
+    ctx.fillStyle = fill;
+
     ctx.beginPath();
     ctx.moveTo(x + r, y);
     ctx.lineTo(x + w - r, y);
@@ -56,9 +158,21 @@ init().then((_wasm) => {
     ctx.lineTo(x, y + r);
     ctx.quadraticCurveTo(x, y, x + r, y);
     ctx.closePath();
-
-    ctx.fillStyle = fill;
+    
     ctx.fill();
+
+    // wheels
+    ctx.beginPath()
+    ctx.strokeStyle = fill;
+    ctx.arc(x + w*2/7, ground - radius, radius, 0, 2*Math.PI)
+    ctx.closePath()
+    ctx.stroke()
+
+    ctx.beginPath()
+    ctx.arc(x + w*5/7, ground - radius, radius, 0, 2*Math.PI)
+    ctx.closePath()
+    ctx.stroke()
+    
   }
   
   function DrawArrow(name: string, x: number, color: string) {
@@ -138,15 +252,25 @@ init().then((_wasm) => {
   function paint() {
     ctx?.clearRect(0, 0, canvas.width, canvas.height); // Clear the area before drawing
 
-    x1_0 = parseFloat((document.getElementById("value-x1") as HTMLInputElement).value);
-    x2_0 = parseFloat((document.getElementById("value-x2") as HTMLInputElement).value);
+    const w = 40
+    const dx1 = 100
+    const dx2 = 200 + w
+    
+    const x1Block = dx1 + model.states.x1 * 10
+    const x2Block = dx2 + model.states.x2 * 10
 
     DrawGrid()
-    DrawRef(100 + model.m_setpoint * 10)
-    DrawArrow("x1", 100, BLUE)
-    DrawArrow("x2", 200, PINK)
-    DrawBody(100 + model.states.x1 * 10, 20, 40, 40, 2, BLUE);
-    DrawBody(200 + model.states.x2 * 10, 20, 40, 40, 2, PINK);
+    DrawSpring(0, x1Block, BLUE)
+    DrawDamper(0, x1Block, BLUE)
+    DrawSpring(x1Block + 40, x2Block, PINK)
+    DrawDamper(x1Block + 40, x2Block, PINK)
+    DrawRef(dx1 + model.m_setpoint * 10)
+
+    DrawArrow("x1", dx1, BLUE)
+    DrawArrow("x2", dx2, PINK)
+
+    DrawBody(x1Block, 20, w, w, 2, BLUE);
+    DrawBody(x2Block, 20, w, w, 2, PINK);
   }
 
   let x1_0 = 1.0;
