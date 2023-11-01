@@ -14,8 +14,11 @@ init().then((_wasm) => {
   // let stepn = parseFloat((document.getElementById("value-stepn") as HTMLInputElement).value) || 30;
   // let numel = parseFloat((document.getElementById("value-numel") as HTMLInputElement).value) || 200;
   
-  const BLUE = "#517acc"
-  const PINK = "#fa6384"
+  const COLOR = {
+    "BLUE": "#517acc",
+    "LITE_BLUE": "#7ba1ed",
+    "PINK": "#fa6384"
+  }
 
   let stepn = 20;
   let numel = 200;
@@ -28,11 +31,11 @@ init().then((_wasm) => {
     ctx.lineWidth = 2
 
     // draw spring 
-    let L = (xright - xleft)
-    let w = 20 * L / 100
+    const L = (xright - xleft)
+    const w = Math.max(20 * L / 100, 8)
     
-    let left = (L - w) / 2.0 + xleft
-    let right = left + w
+    const left = (L - w) / 2.0 + xleft
+    const right = left + w
 
     const y  = 30.0
     const dy = 5.0
@@ -147,11 +150,11 @@ init().then((_wasm) => {
 
   }
 
-  function DrawBody(x: number, y: number, w: number, h: number, r: number, fill: string) {
+  function DrawBody(x: number, y: number, w: number, h: number, r: number, color: string) {
     if (!ctx) { return }
 
     // rounded box
-    ctx.fillStyle = fill;
+    ctx.fillStyle = color;
 
     ctx.beginPath();
     ctx.moveTo(x + r, y);
@@ -172,14 +175,23 @@ init().then((_wasm) => {
     const ground = y + h + radius * 2
 
     ctx.beginPath()
-    ctx.strokeStyle = fill;
+    
+    ctx.strokeStyle = color;
+    ctx.fillStyle += "88"
     ctx.arc(x + w*2/7, ground - radius, radius, 0, 2*Math.PI)
+
     ctx.closePath()
+    ctx.fill()
     ctx.stroke()
 
     ctx.beginPath()
+
+    ctx.strokeStyle = color;
+    ctx.fillStyle += "88"
     ctx.arc(x + w*5/7, ground - radius, radius, 0, 2*Math.PI)
+
     ctx.closePath()
+    ctx.fill()
     ctx.stroke()
     
   }
@@ -286,16 +298,16 @@ init().then((_wasm) => {
     DrawGrid()
     DrawRef(dx1 + model.m_setpoint * 10)
     DrawGround(20, w)
-    DrawSpring(0, x1Block, BLUE)
-    DrawDamper(0, x1Block, BLUE)
-    DrawSpring(x1Block + 40, x2Block, PINK)
-    DrawDamper(x1Block + 40, x2Block, PINK)
+    DrawSpring(0, x1Block, COLOR.BLUE)
+    DrawDamper(0, x1Block, COLOR.BLUE)
+    DrawSpring(x1Block + 40, x2Block, COLOR.PINK)
+    DrawDamper(x1Block + 40, x2Block, COLOR.PINK)
 
-    DrawArrow("x1", dx1, BLUE)
-    DrawArrow("x2", dx2, PINK)
+    DrawArrow("x1", dx1, COLOR.BLUE)
+    DrawArrow("x2", dx2, COLOR.PINK)
 
-    DrawBody(x1Block, 20, w, w, 2, BLUE);
-    DrawBody(x2Block, 20, w, w, 2, PINK);
+    DrawBody(x1Block, 20, w, w, 2, COLOR.BLUE);
+    DrawBody(x2Block, 20, w, w, 2, COLOR.PINK);
   }
 
   let x1_0 = 0.0;
