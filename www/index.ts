@@ -114,8 +114,8 @@ init().then((_wasm) => {
     ctx.closePath()
     ctx.stroke()
   }
-
-  function DrawBody(x: number, y: number, w: number, h: number, r: number, fill: string) {
+  
+  function DrawGround(y: number, h: number) {
     if (!ctx) { return }
 
     // ground
@@ -133,7 +133,7 @@ init().then((_wasm) => {
     ctx.lineWidth = 1
     
     let xi = 0
-    while (xi < canvas.width) {
+    while (xi < canvas.width + 8) {
       ctx.moveTo(xi, ground)
       ctx.lineTo(xi - 8, ground + 7)
       
@@ -143,6 +143,10 @@ init().then((_wasm) => {
     ctx.closePath()
     ctx.stroke()
 
+  }
+
+  function DrawBody(x: number, y: number, w: number, h: number, r: number, fill: string) {
+    if (!ctx) { return }
 
     // rounded box
     ctx.fillStyle = fill;
@@ -162,6 +166,9 @@ init().then((_wasm) => {
     ctx.fill();
 
     // wheels
+    const radius = 5
+    const ground = y + h + radius * 2
+
     ctx.beginPath()
     ctx.strokeStyle = fill;
     ctx.arc(x + w*2/7, ground - radius, radius, 0, 2*Math.PI)
@@ -260,11 +267,12 @@ init().then((_wasm) => {
     const x2Block = dx2 + model.states.x2 * 10
 
     DrawGrid()
+    DrawRef(dx1 + model.m_setpoint * 10)
+    DrawGround(20, w)
     DrawSpring(0, x1Block, BLUE)
     DrawDamper(0, x1Block, BLUE)
     DrawSpring(x1Block + 40, x2Block, PINK)
     DrawDamper(x1Block + 40, x2Block, PINK)
-    DrawRef(dx1 + model.m_setpoint * 10)
 
     DrawArrow("x1", dx1, BLUE)
     DrawArrow("x2", dx2, PINK)
@@ -273,7 +281,7 @@ init().then((_wasm) => {
     DrawBody(x2Block, 20, w, w, 2, PINK);
   }
 
-  let x1_0 = 1.0;
+  let x1_0 = 0.0;
   let x2_0 = 0.0;
   let v1_0 = 0.0;
   let v2_0 = 0.0;
