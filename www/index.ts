@@ -11,9 +11,11 @@ init().then((_wasm) => {
   const ctx = canvas.getContext("2d");
 
   const timer = document.getElementById("timer");
-  // let stepn = parseFloat((document.getElementById("value-stepn") as HTMLInputElement).value) || 30;
-  // let numel = parseFloat((document.getElementById("value-numel") as HTMLInputElement).value) || 200;
-  
+  const radius = 7
+  const wbody = 40
+  const hbody = 40
+  const rbody = 2
+
   const COLOR = {
     "BLUE": "#517acc",
     "LITE_BLUE": "#7ba1ed",
@@ -37,7 +39,12 @@ init().then((_wasm) => {
     const left = (L - w) / 2.0 + xleft
     const right = left + w
 
-    const y  = 30.0
+    const groundTop = GetGround()[0]
+    const bodyBottom = groundTop - radius*2
+    const bodyTop    = bodyBottom - hbody
+
+    const y = bodyBottom - (bodyBottom - bodyTop)*5/7
+
     const dy = 5.0
     const dx = w/12.0
 
@@ -75,7 +82,12 @@ init().then((_wasm) => {
     let left = (L - w) / 2.0 + xleft
     let right = left + w
 
-    const y  = 50.0
+    const groundTop = GetGround()[0]
+    const bodyBottom = groundTop - radius*2
+    const bodyTop    = bodyBottom - hbody
+
+    const y = bodyBottom - (bodyBottom - bodyTop)*2/7
+
     const dy = 5.0
     const dx = w/2.0
 
@@ -107,13 +119,12 @@ init().then((_wasm) => {
     ctx.lineWidth = 1
 
     const grid = 10
-    let x = 0
-    let y = 0
+    let xi = 0
 
-    while (x < canvas.width) {
-      x += grid
-      ctx.moveTo(x, 0)
-      ctx.lineTo(x, canvas.height)
+    while (xi < canvas.width) {
+      xi += grid
+      ctx.moveTo(xi, 0)
+      ctx.lineTo(xi, canvas.height)
     }
 
     ctx.closePath()
@@ -124,13 +135,12 @@ init().then((_wasm) => {
     if (!ctx) { return }
 
     // ground
-    const radius = 5
-    const ground = y + h + radius * 2
+    const [groundTop, groundBottom] = GetGround()
 
     ctx.beginPath()
     ctx.strokeStyle = "#777"
-    ctx.moveTo(0, ground)
-    ctx.lineTo(canvas.width, ground)
+    ctx.moveTo(0, groundTop)
+    ctx.lineTo(canvas.width, groundTop)
     ctx.closePath()
     ctx.stroke()
     
@@ -139,60 +149,68 @@ init().then((_wasm) => {
     
     let xi = 0
     while (xi < canvas.width + 8) {
-      ctx.moveTo(xi, ground)
-      ctx.lineTo(xi - 8, ground + 7)
+      ctx.moveTo(xi, groundTop)
+      ctx.lineTo(xi - 8, groundBottom)
       
       xi += 5 
     }
 
     ctx.closePath()
     ctx.stroke()
+  }
+  
+  function GetGround(): number[] {
+    const groundTop = 85
+    const groundBottom = groundTop + 7
 
+    return [groundTop, groundBottom]
   }
 
-  function DrawBody(x: number, y: number, w: number, h: number, r: number, color: string) {
+  function DrawBody(x: number, color: string) {
     if (!ctx) { return }
 
-    // rounded box
+    // get ground
+    const groundTop = GetGround()[0]
+
+    // wheels
+    ctx.beginPath()
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color
+    ctx.fillStyle += "88"
+    ctx.arc(x + wbody*2/7, groundTop - radius, radius, 0, 2*Math.PI)
+
+    ctx.closePath()
+    ctx.fill()
+    ctx.stroke()
+
+    ctx.beginPath()
+
+    ctx.strokeStyle = color;
+    ctx.fillStyle += "88"
+    ctx.arc(x + wbody*5/7, groundTop - radius, radius, 0, 2*Math.PI)
+
+    ctx.closePath()
+    ctx.fill()
+    ctx.stroke()
+
+    // box
+    const y = groundTop - hbody - radius*2
     ctx.fillStyle = color;
 
     ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.moveTo(x + rbody, y);
+    ctx.lineTo(x + wbody - rbody, y);
+    ctx.quadraticCurveTo(x + wbody, y, x + wbody, y + rbody);
+    ctx.lineTo(x + wbody, y + hbody - rbody);
+    ctx.quadraticCurveTo(x + wbody, y + hbody, x + wbody - rbody, y + hbody);
+    ctx.lineTo(x + rbody, y + hbody);
+    ctx.quadraticCurveTo(x, y + hbody, x, y + hbody - rbody);
+    ctx.lineTo(x, y + rbody);
+    ctx.quadraticCurveTo(x, y, x + rbody, y);
     ctx.closePath();
     
     ctx.fill();
 
-    // wheels
-    const radius = 5
-    const ground = y + h + radius * 2
-
-    ctx.beginPath()
-    
-    ctx.strokeStyle = color;
-    ctx.fillStyle += "88"
-    ctx.arc(x + w*2/7, ground - radius, radius, 0, 2*Math.PI)
-
-    ctx.closePath()
-    ctx.fill()
-    ctx.stroke()
-
-    ctx.beginPath()
-
-    ctx.strokeStyle = color;
-    ctx.fillStyle += "88"
-    ctx.arc(x + w*5/7, ground - radius, radius, 0, 2*Math.PI)
-
-    ctx.closePath()
-    ctx.fill()
-    ctx.stroke()
     
   }
   
@@ -202,9 +220,8 @@ init().then((_wasm) => {
     ctx.strokeStyle = color
     ctx.lineWidth = 2
 
-    const groundTop = 20 + 40 + 5 * 2
-    const groundBottom = 20 + 40 + 5 * 2 + 7
-    const dy = 20
+    const [groundTop, groundBottom] = GetGround()
+    const dy = 13
 
     ctx.beginPath()
     
@@ -220,24 +237,59 @@ init().then((_wasm) => {
       yi += spacing
     }
 
+    // draw line bottom
     ctx.moveTo(x, groundBottom)
     ctx.lineTo(x, canvas.height)
-    ctx.moveTo(x, canvas.height - dy)
-    ctx.lineTo(x + 20, canvas.height - dy)
 
-    ctx.lineTo(x + 10, canvas.height - dy - 10)
+    // draw arrow
+    const y = canvas.height - dy
+    const ddy = 7
+    const ddx = 7
 
+    ctx.moveTo(x, y)
+    ctx.lineTo(x + 20, y)
+    ctx.lineTo(x + 20 - ddx, canvas.height - dy - ddy)
     ctx.moveTo(x + 20, canvas.height - dy)
-    ctx.lineTo(x + 10, canvas.height - dy + 10)
-
+    ctx.lineTo(x + 20 - ddx, canvas.height - dy + ddy)
     ctx.closePath()
     ctx.stroke()
     
     ctx.beginPath()
     ctx.fillStyle = color
     ctx.font = "20px monospace"
-    ctx.fillText(name, x + 25, canvas.height - dy + 5)
-    
+    ctx.fillText(name, x + 25, canvas.height - dy + 7)
+  }
+  
+  function DrawU(x: number) {
+    if (!ctx) { return }
+
+    const y = 16
+    const dx = 7
+    const dy = 7
+
+    const color = "#aaa"
+
+    ctx.beginPath()
+
+    ctx.strokeStyle = color
+    ctx.lineWidth = 2
+
+    ctx.moveTo(x, y)
+    ctx.lineTo(x + 20, y)
+
+    ctx.moveTo(x + 20, y)
+    ctx.lineTo(x + 20 - dx, y - dy)
+    ctx.moveTo(x + 20, y)
+    ctx.lineTo(x + 20 - dx, y + dy)
+
+    ctx.closePath()
+    ctx.stroke()
+
+    ctx.beginPath()
+    ctx.fillStyle = color
+    ctx.font = "20px monospace"
+    ctx.fillText("F", x + 25, y + 5)
+
   }
 
   function DrawRef(x: number) {
@@ -247,20 +299,19 @@ init().then((_wasm) => {
     ctx.lineWidth = 3
     ctx.beginPath()
     
-    const bottom = 20 + 40 + 5 * 2
+    const groundTop = GetGround()[0]
 
     const drie = 5
     ctx.moveTo(x-drie, 0)
     ctx.lineTo(x, drie)
     ctx.lineTo(x+drie, 0)
 
-
     ctx.lineWidth =  3
     let y = drie
     const spacing = 5
     const line =15
     
-    while (y < bottom) {
+    while (y < groundTop) {
       y += spacing
       ctx.moveTo(x, y)
       y += line
@@ -271,22 +322,14 @@ init().then((_wasm) => {
     ctx.stroke()
 
     ctx.beginPath()
-    ctx.clearRect(x-drie, bottom, drie*2, drie*4)
-    // ctx.rect(x-drie, bottom, drie*2, drie*4)
+    ctx.clearRect(x-drie, groundTop, drie*2, drie*4)
     ctx.closePath()
     ctx.fill()
 
-    // ctx.beginPath()
-    // ctx.closePath()
-    // ctx.moveTo(x-drie, bottom)
-    // ctx.lineTo(x, bottom - drie)
-    // ctx.lineTo(x+drie, bottom)
-    // ctx.stroke()
-
   }
 
-  function paint() {
-    ctx?.clearRect(0, 0, canvas.width, canvas.height); // Clear the area before drawing
+  function Paint() {
+    ctx?.clearRect(0, 0, canvas.width, canvas.height); 
 
     const w = 40
     const dx1 = 100
@@ -297,6 +340,7 @@ init().then((_wasm) => {
 
     DrawGrid()
     DrawRef(dx1 + model.m_setpoint * 10)
+    DrawU(dx1)
     DrawGround(20, w)
     DrawSpring(0, x1Block, COLOR.BLUE)
     DrawDamper(0, x1Block, COLOR.BLUE)
@@ -306,8 +350,8 @@ init().then((_wasm) => {
     DrawArrow("x1", dx1, COLOR.BLUE)
     DrawArrow("x2", dx2, COLOR.PINK)
 
-    DrawBody(x1Block, 20, w, w, 2, COLOR.BLUE);
-    DrawBody(x2Block, 20, w, w, 2, COLOR.PINK);
+    DrawBody(x1Block, COLOR.BLUE);
+    DrawBody(x2Block, COLOR.PINK);
   }
 
   let x1_0 = 0.0;
@@ -456,7 +500,7 @@ init().then((_wasm) => {
 
       model.stepn(stepn);
       
-      paint();
+      Paint();
       updateChart()
       requestAnimationFrame(play);
     }, 1000 / fps);
@@ -464,8 +508,6 @@ init().then((_wasm) => {
 
   play();
 
-
-  // Chart.register(CategoryScale, LinearScale, Title, Tooltip, BarController);
   Chart.register(...registerables);
 
   // Initialize an empty array for data
