@@ -25,6 +25,44 @@ init().then((_wasm) => {
   let stepn = 20;
   let numel = 200;
   
+  let isDragging = false
+  let lastX = 0
+  let lastY = 0
+
+  // canvas.addEventListener("mousedown", (event: MouseEvent) => {
+  //   isDragging = true
+  //   lastX = event.clientX - canvas.getBoundingClientRect().left
+  //   lastY = event.clientX - canvas.getBoundingClientRect().top
+  // })
+
+  // canvas.addEventListener("mouseup", (_event: MouseEvent) => {
+  //   isDragging = false
+  // })
+
+  canvas.addEventListener("click", (event: MouseEvent) => {
+    // if (isDragging) {
+      const currentX = event.clientX - canvas.getBoundingClientRect().left
+      const currentY = event.clientX - canvas.getBoundingClientRect().top
+      
+      lastX = currentX
+      lastY = currentY
+      
+      console.log(lastX)
+      
+      model.m_setpoint = (lastX - 100)/10
+
+      const setpoint_in = document.getElementById("value-setpoint") as HTMLInputElement      
+      setpoint_in.value = `${model.m_setpoint}`
+    // }
+  })
+
+  
+  // canvas.addEventListener("click", (event:MouseEvent) => {
+  //   const x = event.clientX - canvas.getBoundingClientRect().left;
+  //   const y = event.clientY - canvas.getBoundingClientRect().top;
+  //   console.log(`${x}, ${y}`)
+  // })
+  
   function DrawSpring(xleft: number, xright: number, color: string) {
     if (!ctx) { return }
     
