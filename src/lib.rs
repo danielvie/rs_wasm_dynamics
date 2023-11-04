@@ -9,17 +9,31 @@ pub fn sum(a: i32, b: i32) -> i32 {
     a + b
 }
 
+#[wasm_bindgen]
+#[derive(Clone, Copy)]
+pub enum ControlType {
+    LQR,
+    PID
+}
 
 #[wasm_bindgen]
-pub fn greet(name: &str) {
-    alert(name);
-}
+pub fn bla(control: ControlType) -> i32 { 
+    let res = match control { 
+        ControlType::LQR => 1,
+        ControlType::PID => 12,
+    };
+    res
+ }
 
 #[wasm_bindgen]
 extern {
     pub fn alert(s: &str);
 }
 
+#[wasm_bindgen(module = "/www/utils/consolelog.ts")]
+extern "C" {
+    fn consolelog(msg: String);
+}
 
 // model
 #[wasm_bindgen]
@@ -50,10 +64,21 @@ pub struct Model {
     _step_time: f64,
     pub states: State,
 
+    // controller
+
     // pid
     m_integral: f64, m_prev_error: f64, pub m_setpoint: f64, pub m_controle_on: bool,
     pub m_dt: f64,
     pub m_ki: f64, pub m_kp: f64, pub m_kd: f64,
+    pub controltype: ControlType,
+    
+    // lqr
+    pub klqr_x1: f64,
+    pub klqr_x2: f64,
+    pub klqr_v1: f64,
+    pub klqr_v2: f64,
+    pub klqr_i: f64,
+
 }
 
 #[wasm_bindgen]
@@ -68,10 +93,16 @@ impl Model {
             m_integral: 0.0, m_prev_error: 0.0, m_setpoint: 1.0, m_controle_on: false,
             m_dt: 0.01,
             m_ki: 1.0, m_kp: 0.0, m_kd: 0.0,
+            controltype: ControlType::PID,
+            klqr_x1: 485.43,
+            klqr_x2: 458.34,
+            klqr_v1: -268.18,
+            klqr_v2: 277.26,
+            klqr_i: -31.62,
         }
     }
     
-    pub fn pid_compute(&mut self) -> f64 {
+    fn pid_compute(&mut self) -> f64 {
         let error:f64 = self.m_setpoint - self.states.x1;
         self.m_integral +=  error * self.m_dt;
         let derivative:f64 = -self.states.v1;
@@ -85,6 +116,49 @@ impl Model {
         }
     
         return u;
+    }
+    
+    fn lqr_compute(&mut self) -> f64 {
+        let error:f64    = self.m_setpoint - self.states.x1;
+        self.m_integral +=  error * self.m_dt;
+        
+        let mut u = 0.0;
+    
+        // integral
+        u += -self.klqr_i * self.m_integral;
+        
+        // states
+        let u_ = self.klqr_x1 * self.states.x1 + self.klqr_x2 * self.states.x2 + self.klqr_v1 * self.states.v1 + self.klqr_v2 * self.states.v2;
+        
+        u += self.m_setpoint - u_;
+        
+        let message = format!(
+            "u: {}\n 
+            states.x1: {}\n
+            klqr_x1: {}\n
+            states.x2: {}\n
+            klqr_x2: {}\n
+            states.v1: {}\n
+            klqr_v1: {}\n
+            states.v2: {}\n
+            klqr_v2: {}\n", u, self.states.x1, self.klqr_x1, self.states.x2, self.klqr_x2, self.states.v1, self.klqr_v1, self.states.v2, self.klqr_v2);
+
+        consolelog(message);
+
+        self.m_prev_error = error;
+        
+        if self.m_controle_on == false {
+            u = u * 0.0;
+        }
+        u
+    }
+    
+    fn compute_control(&mut self, controltype: ControlType) -> f64 {
+        let u = match controltype {
+            ControlType::PID => self.pid_compute(),
+            ControlType::LQR => self.lqr_compute(),
+        };
+        u
     }
     
     pub fn print(&self) -> String {
@@ -116,7 +190,7 @@ impl Model {
         // compute control
         let mut f1: f64 = 0.0;
         if self.m_controle_on {
-            f1 = self.pid_compute();
+            f1 = self.compute_control(self.controltype)
         }
         
         // emulate step reference signal
@@ -165,5 +239,6 @@ impl Model {
         self.m2 = m2;
         self.c = c;
         self.k = k;
+        self.m_integral = 0.0;
     }
 }

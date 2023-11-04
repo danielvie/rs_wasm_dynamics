@@ -1,4 +1,4 @@
-all: p
+all: b
 
 i:
 	cargo init

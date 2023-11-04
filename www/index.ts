@@ -1,4 +1,4 @@
-import init, { Model, State } from "mass_sim_dynamics";
+import init, { Model, State, ControlType } from "mass_sim_dynamics";
 import { Chart, registerables } from 'chart.js';
 
 
@@ -25,7 +25,17 @@ init().then((_wasm) => {
   let stepn = 20;
   let numel = 200;
   
-  let isDragging = false
+
+  // bla
+  const bla = document.getElementById("bla")
+  if (bla) {
+    console.log(_wasm.bla(ControlType.PID))
+  }
+
+
+
+
+  // let isDragging = false
   let lastX = 0
   let lastY = 0
 
@@ -66,6 +76,9 @@ init().then((_wasm) => {
   function DrawSpring(xleft: number, xright: number, color: string) {
     if (!ctx) { return }
     
+
+
+
     // params
     ctx.strokeStyle = color
     ctx.lineWidth = 2
@@ -405,7 +418,7 @@ init().then((_wasm) => {
   const fity_btn = document.getElementById("fit-y-btn");
   const paramset_btn = document.getElementById("param-set-btn");
   const controlon_btn = document.getElementById("control-on-btn");
-  const controlflip_btn = document.getElementById("control-flip-btn");
+  const controltype_btn = document.getElementById("controltype-btn");
 
   reset_btn?.addEventListener("click", () => {
     Reset()
@@ -423,9 +436,21 @@ init().then((_wasm) => {
     UpdateParams()
   });
 
-  controlflip_btn?.addEventListener("click", () => {
-    ControlFlip()
+  controltype_btn?.addEventListener("click", () => {
+    ControlTypeFlip()
   });
+  
+  function ControlTypeFlip() {
+    if (!controltype_btn) { return }
+
+    if (model.controltype == ControlType.LQR) {
+      controltype_btn.innerText = "PID"
+      model.controltype = ControlType.PID
+    } else if (model.controltype == ControlType.PID) {
+      controltype_btn.innerText = "LQR"
+      model.controltype = ControlType.LQR
+    }
+  }
   
   function ControlFlip() {
     const in_setpoint = document.getElementById("value-setpoint") as HTMLInputElement
@@ -464,6 +489,11 @@ init().then((_wasm) => {
     model.m_ki = ki
     model.m_kd = kd
     model.m_setpoint = setpoint
+    
+    // update type of controler
+    if (controltype_btn) {
+      controltype_btn.innerText = (model.controltype == ControlType.PID) ? "PID" : "LQR" 
+    }
   }
   
   function Reset() {
@@ -486,7 +516,7 @@ init().then((_wasm) => {
   }
   
   function ControlON(value:boolean) {
-    if (!controlon_btn || !paramset_btn || !controlflip_btn) { return }
+    if (!controlon_btn || !paramset_btn || !controltype_btn) { return }
 
     if (value) {
       controlon_btn.classList.remove("bg-red-800")
@@ -525,6 +555,22 @@ init().then((_wasm) => {
 
   let model = Model.new();
   model.states = State.from(x1_0, x2_0, v1_0, v2_0);
+
+  model.controltype = ControlType.LQR
+
+  let gain = [184.7561, 142.5969, -55.7884, 106.9744, -31.6228]
+  // gain = [75.30, 46.25, -1.70, 38.44, -31.6228]
+  gain = [150.3559, 101.3733, -21.1406,  81.9404, -44.7214]
+  gain = [231.2085, 102.3687, -43.5301, 289.3857, -44.7214]
+
+  model.klqr_x1 = gain[0]
+  model.klqr_v1 = gain[1]
+  model.klqr_x2 = gain[2]
+  model.klqr_v2 = gain[3]
+  model.klqr_i  = gain[4]
+  
+  console.log(model)
+
   UpdateParams()
 
   function play() {
