@@ -63,8 +63,10 @@ pub struct Model {
     _kp: f64, _ki: f64, _kd: f64,
     _step_time: f64,
     pub states: State,
+    pub cont: i64,
 
     // controller
+    pub external_f: f64,
 
     // pid
     m_integral: f64, m_prev_error: f64, pub m_setpoint: f64, pub m_controle_on: bool,
@@ -89,7 +91,9 @@ impl Model {
             _kp: 3.0, _ki: 0.5, _kd: 10.0,
             _step_time: 2.0,
             states: State::new(),
+            cont: 0,
 
+            external_f: 0.0,
             m_integral: 0.0, m_prev_error: 0.0, m_setpoint: 1.0, m_controle_on: false,
             m_dt: 0.01,
             m_ki: 1.0, m_kp: 0.0, m_kd: 0.0,
@@ -120,30 +124,56 @@ impl Model {
     
     fn lqr_compute(&mut self) -> f64 {
         let error:f64    = self.m_setpoint - self.states.x1;
-        self.m_integral +=  error * self.m_dt;
         
-        let mut u = 0.0;
-    
-        // integral
-        u += -self.klqr_i * self.m_integral;
-        
-        // states
-        let u_ = self.klqr_x1 * self.states.x1 + self.klqr_x2 * self.states.x2 + self.klqr_v1 * self.states.v1 + self.klqr_v2 * self.states.v2;
-        
-        u += self.m_setpoint - u_;
-        
-        let message = format!(
-            "u: {}\n 
-            states.x1: {}\n
-            klqr_x1: {}\n
-            states.x2: {}\n
-            klqr_x2: {}\n
-            states.v1: {}\n
-            klqr_v1: {}\n
-            states.v2: {}\n
-            klqr_v2: {}\n", u, self.states.x1, self.klqr_x1, self.states.x2, self.klqr_x2, self.states.v1, self.klqr_v1, self.states.v2, self.klqr_v2);
+        if self.m_controle_on {
+            self.cont += 1;
+        }
 
-        consolelog(message);
+        // integral
+        self.m_integral += (error + self.m_prev_error)/2.0 * self.m_dt;
+        let eki = -self.klqr_i * self.m_integral;
+
+        // Previous integral value
+        // // let prev_integral = self.m_integral;
+
+        // // Use the Runge-Kutta method to update the integral
+        // let eval = error + self.m_prev_error;
+
+        // let k1 = eval / 2.0 * self.m_dt;
+        // let k2 = (eval / 2.0 + (eval + k1) / 2.0) * self.m_dt;
+        // let k3 = (eval / 2.0 + (eval + k2) / 2.0) * self.m_dt;
+        // let k4 = (eval + k3) * self.m_dt;
+
+        // self.m_integral += (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0;
+
+        // states
+        let kstates = self.klqr_x1 * self.states.x1 + self.klqr_x2 * self.states.x2 + self.klqr_v1 * self.states.v1 + self.klqr_v2 * self.states.v2;
+        let mut u = eki - kstates;
+
+        
+        if self.cont == 50 || self.cont == 51 || self.cont == 52 {
+            let message = format!(
+                "
+                u: {}\n 
+                ref: {}\n 
+                error: {}\n 
+                error_prev: {}\n 
+                integral: {}\n 
+                kstates: {}\n 
+                klqr [x1, v1, x2, v2]: [{}, {}, {}, {}];\n
+                states [x1, v1, x2, v2]: [{}, {}, {}, {}];\n
+                ", 
+                u, 
+                self.m_setpoint,
+                error,
+                self.m_prev_error,
+                self.m_integral,
+                kstates, 
+                self.klqr_x1, self.klqr_v1, self.klqr_x2, self.klqr_v2,
+                self.states.x1, self.states.v1, self.states.x2, self.states.v2);
+    
+            consolelog(message);
+        }
 
         self.m_prev_error = error;
         
@@ -192,6 +222,8 @@ impl Model {
         if self.m_controle_on {
             f1 = self.compute_control(self.controltype)
         }
+        
+        f1 += self.external_f;
         
         // emulate step reference signal
         // if (m_t > m_step_time) {

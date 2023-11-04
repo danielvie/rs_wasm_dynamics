@@ -419,6 +419,7 @@ init().then((_wasm) => {
   const paramset_btn = document.getElementById("param-set-btn");
   const controlon_btn = document.getElementById("control-on-btn");
   const controltype_btn = document.getElementById("controltype-btn");
+  const controlstep_btn = document.getElementById("controlstep-btn");
 
   reset_btn?.addEventListener("click", () => {
     Reset()
@@ -440,6 +441,29 @@ init().then((_wasm) => {
     ControlTypeFlip()
   });
   
+  controlstep_btn?.addEventListener("click", () => {
+    if (model.external_f < 0.5) {
+      ControlStep(2.0)
+    } else {
+      ControlStep(0.0)
+    }
+  });
+  
+  function ControlStep(value: number) {
+
+    if (!controlstep_btn) { return }
+
+    model.external_f = value
+
+    if (model.external_f > 0.3) {
+      controlstep_btn.classList.remove('bg-sky-800')
+      controlstep_btn.classList.add('bg-sky-900')
+    } else {
+      controlstep_btn.classList.add('bg-sky-800')
+      controlstep_btn.classList.remove('bg-sky-900')
+    }
+  }
+
   function ControlTypeFlip() {
     if (!controltype_btn) { return }
 
@@ -501,6 +525,7 @@ init().then((_wasm) => {
     model.t = 0.0
     model.reset(x1_0, x2_0, v1_0, v2_0, m1, m2, c, k);
     ControlON(false)
+    ControlStep(0.0)
 
     stepn = 40;
     numel = 200;
@@ -520,14 +545,14 @@ init().then((_wasm) => {
 
     if (value) {
       controlon_btn.classList.remove("bg-red-800")
-      controlon_btn.classList.add("bg-sky-800")
-      controlon_btn.innerText = "control ON"
+      controlon_btn.classList.add("bg-green-800")
+      controlon_btn.innerText = "ON"
 
       model.m_controle_on = true
     } else {
-      controlon_btn.classList.remove("bg-sky-800")
+      controlon_btn.classList.remove("bg-green-800")
       controlon_btn.classList.add("bg-red-800")
-      controlon_btn.innerText = "control OFF"
+      controlon_btn.innerText = "OFF"
 
       model.m_controle_on = false
     }
@@ -549,6 +574,7 @@ init().then((_wasm) => {
     switch (e.code) {
       case "Space":
         reset_btn?.click();
+        
         break;
     }
   });
