@@ -23,7 +23,7 @@ init().then((_wasm) => {
   }
 
   let stepn = 20;
-  let numel = 200;
+  let numel = 300;
   
 
   // bla
@@ -531,13 +531,14 @@ init().then((_wasm) => {
     numel = 200;
     
     if (dataX1) {
-      updateChart()
+      UpdateChart()
     }
   }
   
   function FitY() {
     max = Math.max(...dataX1)
     min = Math.min(...dataX1)
+    console.log(`min: ${min}, max: ${max}`)
   }
   
   function ControlON(value:boolean) {
@@ -611,7 +612,7 @@ init().then((_wasm) => {
       model.stepn(stepn);
       
       Paint();
-      updateChart()
+      UpdateChart()
       requestAnimationFrame(play);
     }, 1000 / fps);
   }
@@ -621,10 +622,10 @@ init().then((_wasm) => {
   Chart.register(...registerables);
 
   // Initialize an empty array for data
-  const dataX1:number[] = []
-  const dataX2:number[] = []
-  const dataSet:number[] = []
-  const labels:string[] = []
+  const dataX1:number[] = Array.from({ length: numel }, () => 0);
+  const dataX2:number[] = Array.from({ length: numel }, () => 0);
+  const dataRef:number[] = Array.from({ length: numel }, () => 0);
+  const labels:string[] = Array.from({ length: numel }, () => "0");
   
   // Create the initial chart
   const canvasg = document.getElementById("myChart") as HTMLCanvasElement;
@@ -650,7 +651,7 @@ init().then((_wasm) => {
         },
         {
           label: 'ref',
-          data: dataSet,
+          data: dataRef,
           fill: "#bbb",
           borderWidth: 1,
           pointRadius: 0
@@ -683,7 +684,7 @@ init().then((_wasm) => {
 
   let max = -1
   let min = 1
-  function updateChart() {
+  function UpdateChart() {
     
     const t  = Math.floor(model.time())
     const x1 = model.states.x1
@@ -692,25 +693,25 @@ init().then((_wasm) => {
 
     dataX1.push(x1)
     dataX2.push(x2)
-    dataSet.push(setp)
+    dataRef.push(setp)
     labels.push(`${t}`)
     
     while (dataX1.length > numel) {
       dataX1.shift()
       dataX2.shift()
-      dataSet.shift()
+      dataRef.shift()
       labels.shift()
     }
     
     chart.data.datasets[0].data = dataX1
     chart.data.labels = labels
 
-    max = Math.max(...dataX1, max)
-    min = Math.min(...dataX1, min)
+    max = Math.max(...dataX1, ...dataX2, max)
+    min = Math.min(...dataX1, ...dataX2, min)
     
     if (chart.options.scales?.y) {
-      chart.options.scales.y.suggestedMax = max
-      chart.options.scales.y.suggestedMin = min
+      chart.options.scales.y.max = max + 1
+      chart.options.scales.y.min = min - 1
     }
     
     // update label

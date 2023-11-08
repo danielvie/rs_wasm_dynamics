@@ -5,11 +5,6 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 
 #[wasm_bindgen]
-pub fn sum(a: i32, b: i32) -> i32 {
-    a + b
-}
-
-#[wasm_bindgen]
 #[derive(Clone, Copy)]
 pub enum ControlType {
     LQR,
@@ -125,18 +120,20 @@ impl Model {
     fn lqr_compute(&mut self) -> f64 {
         let error:f64    = self.m_setpoint - self.states.x1;
         
-        if self.m_controle_on {
-            self.cont += 1;
+        if !self.m_controle_on {
+            return 0.0;
         }
+
+        self.cont += 1;
 
         // integral
         self.m_integral += (error + self.m_prev_error)/2.0 * self.m_dt;
-        let eki = -self.klqr_i * self.m_integral;
+        self.m_prev_error = error;
 
-        // Previous integral value
-        // // let prev_integral = self.m_integral;
+        let error_ki = -self.klqr_i * self.m_integral;
 
-        // // Use the Runge-Kutta method to update the integral
+        // Use the Runge-Kutta method to update the integral
+        // let prev_integral = self.m_integral;
         // let eval = error + self.m_prev_error;
 
         // let k1 = eval / 2.0 * self.m_dt;
@@ -147,9 +144,8 @@ impl Model {
         // self.m_integral += (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0;
 
         // states
-        let kstates = self.klqr_x1 * self.states.x1 + self.klqr_x2 * self.states.x2 + self.klqr_v1 * self.states.v1 + self.klqr_v2 * self.states.v2;
-        let mut u = eki - kstates;
-
+        let k_times_states = self.klqr_x1 * self.states.x1 + self.klqr_x2 * self.states.x2 + self.klqr_v1 * self.states.v1 + self.klqr_v2 * self.states.v2;
+        let u = error_ki - k_times_states;
         
         if self.cont == 50 || self.cont == 51 || self.cont == 52 {
             let message = format!(
@@ -168,17 +164,15 @@ impl Model {
                 error,
                 self.m_prev_error,
                 self.m_integral,
-                kstates, 
+                k_times_states, 
                 self.klqr_x1, self.klqr_v1, self.klqr_x2, self.klqr_v2,
                 self.states.x1, self.states.v1, self.states.x2, self.states.v2);
     
             consolelog(message);
         }
 
-        self.m_prev_error = error;
-        
         if self.m_controle_on == false {
-            u = u * 0.0;
+            return 0.0
         }
         u
     }
@@ -215,7 +209,6 @@ impl Model {
     }
     
     fn system_dynamics(&mut self, _t: f64, states: &State) -> State {
-        let delta: f64 = states.x2 - states.x1;
     
         // compute control
         let mut f1: f64 = 0.0;
@@ -230,9 +223,15 @@ impl Model {
         //     m_pid->enable(true);
         // }
     
+
+        // let deltax: f64 = states.x2 - states.x1;
+        // let deltav: f64 = states.v2 - states.v1;
+        
         // let a1: f64 = (-m_k*states.x1 - m_c*states.v1 + m_k*delta + m_c*(states.v2 - states.v1) + F1) / m_M1;
-        let a1: f64 = (-self.k*states.x1 - self.c*states.v1 + self.k*delta + self.c*(states.v2 - states.v1) + f1) / self.m1;
-        let a2: f64 = (-self.k*delta - self.c*(states.v2 - states.v1)) / self.m2;
+        // let a1: f64 = (-self.k*states.x1 - self.c*states.v1 + self.k*delta + self.c*(states.v2 - states.v1) + f1) / self.m1;
+
+        let a1: f64 = (-2.0*self.k*self.states.x1 - 2.0*self.c*self.states.v1 + self.k*self.states.x2 + self.c*self.states.v2 + f1) / self.m1;
+        let a2: f64 = (self.k*self.states.x1 + self.c*self.states.v1 - self.k*self.states.x2 - self.c*self.states.v2) / self.m2;
         
         State {x1: states.v1, x2: states.v2, v1: a1, v2: a2}
     }
