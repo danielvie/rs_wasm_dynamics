@@ -1,8 +1,28 @@
 import init, { Model, State, ControlType } from "mass_sim_dynamics";
 import { Chart, registerables } from 'chart.js';
 
+interface MyWasmModule {
+  add: (a: number, b: number) => number;
+}
+
+async function loadCModule() {
+  return fetch("add.wasm")
+    .then((res) => res.arrayBuffer())
+    .then((buf) => WebAssembly.instantiate(buf, {}))
+    .then((was) => {
+      const instance = was.instance;
+      return instance.exports as unknown as MyWasmModule;
+    });
+}
 
 init().then((_wasm) => {
+
+
+  loadCModule().then((was) => {
+    console.log(was.add(0,4))
+  })
+
+
   // const worldWidth = 350;
   // const worldHeight = 100;
   const canvas = document.getElementById("model-canvas") as HTMLCanvasElement;
