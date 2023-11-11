@@ -3,6 +3,11 @@ import { Chart, registerables } from 'chart.js';
 
 interface MyWasmModule {
   add: (a: number, b: number) => number;
+  invert: (M: number) => number;
+  invert_matrix: (a: Float64Array, r: Float64Array) => void;
+  memory: WebAssembly.Memory;
+  _free: (array: any) => number;
+  _malloc: (pointer: number) => number;
 }
 
 async function loadCModule() {
@@ -15,11 +20,34 @@ async function loadCModule() {
     });
 }
 
+declare const Module: any; 
+
 init().then((_wasm) => {
 
+  loadCModule().then((wasmModule) => {
 
-  loadCModule().then((was) => {
-    console.log(was.add(0,4))
+    console.log(wasmModule)
+
+    // Example usage for _invert
+    const inputMatrix = new Float64Array([2, 5, 11, 3, 7, 9, 5, 11, 0]);
+
+    console.log("input matrix: ", inputMatrix)
+
+    // Allocate memory in the wasm module
+    const inputArrayPointer = wasmModule._malloc(inputMatrix.length * Float64Array.BYTES_PER_ELEMENT);
+    new Float64Array(wasmModule.memory.buffer, inputArrayPointer, inputMatrix.length).set(inputMatrix);
+
+    // Call C function
+    const outputArrayPointer = wasmModule.invert(inputArrayPointer);
+    console.log("outputarraypointer: ", outputArrayPointer)
+
+    // Read result of computation
+    const outputArray = new Float64Array(wasmModule.memory.buffer, outputArrayPointer, 18).slice();
+    console.log("Inverted Result:", outputArray);
+
+    // Free memory for the allocated arrays
+    wasmModule._free(inputArrayPointer);
+    wasmModule._free(outputArrayPointer);
   })
 
 
