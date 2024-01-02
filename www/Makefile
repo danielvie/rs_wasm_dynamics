@@ -1,4 +1,4 @@
 
 b:
 	npm run build
-	cp public/* ../docs
+	cp -r public/* ../docs

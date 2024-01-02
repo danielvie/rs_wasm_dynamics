@@ -1,8 +1,58 @@
-import init, { Model, State } from "mass_sim_dynamics";
+import init, { Model, State, ControlType } from "mass_sim_dynamics";
 import { Chart, registerables } from 'chart.js';
 
+interface MyWasmModule {
+  add: (a: number, b: number) => number;
+  invert: (M: number, out: number) => void;
+  invert_matrix: (a: number, r: number) => void;
+  memory: WebAssembly.Memory;
+  _free: (array: any) => number;
+  _malloc: (pointer: number) => number;
+}
+
+async function loadCModule() {
+  return fetch("add.wasm")
+    .then((res) => res.arrayBuffer())
+    .then((buf) => WebAssembly.instantiate(buf, {}))
+    .then((was) => {
+      const instance = was.instance;
+      return instance.exports as unknown as MyWasmModule;
+    });
+}
+
+declare const Module: any; 
 
 init().then((_wasm) => {
+
+  loadCModule().then((wasmModule) => {
+
+    console.log(wasmModule)
+
+    // Example usage for _invert
+    const inputMatrix = new Float64Array([2, 5, 11, 3, 7, 9, 5, 11, 0]);
+
+    console.log("input matrix: ", inputMatrix)
+
+    // Allocate memory in the wasm module
+    const inputArrayPointer = wasmModule._malloc(inputMatrix.length * Float64Array.BYTES_PER_ELEMENT);
+    new Float64Array(wasmModule.memory.buffer, inputArrayPointer, inputMatrix.length).set(inputMatrix);
+
+    // Call C function
+    const outputArrayPointer = wasmModule._malloc(inputMatrix.length * Float64Array.BYTES_PER_ELEMENT);
+     
+    wasmModule.invert(inputArrayPointer, outputArrayPointer);
+    console.log("outputarraypointer: ", outputArrayPointer)
+
+    // Read result of computation
+    const outputArray = new Float64Array(wasmModule.memory.buffer, outputArrayPointer, 19).slice();
+    console.log("Inverted Result:", outputArray);
+
+    // Free memory for the allocated arrays
+    wasmModule._free(inputArrayPointer);
+    wasmModule._free(outputArrayPointer);
+  })
+
+
   // const worldWidth = 350;
   // const worldHeight = 100;
   const canvas = document.getElementById("model-canvas") as HTMLCanvasElement;
@@ -23,9 +73,19 @@ init().then((_wasm) => {
   }
 
   let stepn = 20;
-  let numel = 200;
+  let numel = 300;
   
-  let isDragging = false
+
+  // bla
+  const bla = document.getElementById("bla")
+  if (bla) {
+    console.log(_wasm.bla(ControlType.PID))
+  }
+
+
+
+
+  // let isDragging = false
   let lastX = 0
   let lastY = 0
 
@@ -66,6 +126,9 @@ init().then((_wasm) => {
   function DrawSpring(xleft: number, xright: number, color: string) {
     if (!ctx) { return }
     
+
+
+
     // params
     ctx.strokeStyle = color
     ctx.lineWidth = 2
@@ -405,7 +468,8 @@ init().then((_wasm) => {
   const fity_btn = document.getElementById("fit-y-btn");
   const paramset_btn = document.getElementById("param-set-btn");
   const controlon_btn = document.getElementById("control-on-btn");
-  const controlflip_btn = document.getElementById("control-flip-btn");
+  const controltype_btn = document.getElementById("controltype-btn");
+  const controlstep_btn = document.getElementById("controlstep-btn");
 
   reset_btn?.addEventListener("click", () => {
     Reset()
@@ -423,9 +487,44 @@ init().then((_wasm) => {
     UpdateParams()
   });
 
-  controlflip_btn?.addEventListener("click", () => {
-    ControlFlip()
+  controltype_btn?.addEventListener("click", () => {
+    ControlTypeFlip()
   });
+  
+  controlstep_btn?.addEventListener("click", () => {
+    if (model.external_f < 0.5) {
+      ControlStep(2.0)
+    } else {
+      ControlStep(0.0)
+    }
+  });
+  
+  function ControlStep(value: number) {
+
+    if (!controlstep_btn) { return }
+
+    model.external_f = value
+
+    if (model.external_f > 0.3) {
+      controlstep_btn.classList.remove('bg-sky-800')
+      controlstep_btn.classList.add('bg-sky-900')
+    } else {
+      controlstep_btn.classList.add('bg-sky-800')
+      controlstep_btn.classList.remove('bg-sky-900')
+    }
+  }
+
+  function ControlTypeFlip() {
+    if (!controltype_btn) { return }
+
+    if (model.controltype == ControlType.LQR) {
+      controltype_btn.innerText = "PID"
+      model.controltype = ControlType.PID
+    } else if (model.controltype == ControlType.PID) {
+      controltype_btn.innerText = "LQR"
+      model.controltype = ControlType.LQR
+    }
+  }
   
   function ControlFlip() {
     const in_setpoint = document.getElementById("value-setpoint") as HTMLInputElement
@@ -464,6 +563,11 @@ init().then((_wasm) => {
     model.m_ki = ki
     model.m_kd = kd
     model.m_setpoint = setpoint
+    
+    // update type of controler
+    if (controltype_btn) {
+      controltype_btn.innerText = (model.controltype == ControlType.PID) ? "PID" : "LQR" 
+    }
   }
   
   function Reset() {
@@ -471,33 +575,35 @@ init().then((_wasm) => {
     model.t = 0.0
     model.reset(x1_0, x2_0, v1_0, v2_0, m1, m2, c, k);
     ControlON(false)
+    ControlStep(0.0)
 
     stepn = 40;
     numel = 200;
     
     if (dataX1) {
-      updateChart()
+      UpdateChart()
     }
   }
   
   function FitY() {
     max = Math.max(...dataX1)
     min = Math.min(...dataX1)
+    console.log(`min: ${min}, max: ${max}`)
   }
   
   function ControlON(value:boolean) {
-    if (!controlon_btn || !paramset_btn || !controlflip_btn) { return }
+    if (!controlon_btn || !paramset_btn || !controltype_btn) { return }
 
     if (value) {
       controlon_btn.classList.remove("bg-red-800")
-      controlon_btn.classList.add("bg-sky-800")
-      controlon_btn.innerText = "control ON"
+      controlon_btn.classList.add("bg-green-800")
+      controlon_btn.innerText = "ON"
 
       model.m_controle_on = true
     } else {
-      controlon_btn.classList.remove("bg-sky-800")
+      controlon_btn.classList.remove("bg-green-800")
       controlon_btn.classList.add("bg-red-800")
-      controlon_btn.innerText = "control OFF"
+      controlon_btn.innerText = "OFF"
 
       model.m_controle_on = false
     }
@@ -519,12 +625,29 @@ init().then((_wasm) => {
     switch (e.code) {
       case "Space":
         reset_btn?.click();
+        
         break;
     }
   });
 
   let model = Model.new();
   model.states = State.from(x1_0, x2_0, v1_0, v2_0);
+
+  model.controltype = ControlType.LQR
+
+  let gain = [184.7561, 142.5969, -55.7884, 106.9744, -31.6228]
+  // gain = [75.30, 46.25, -1.70, 38.44, -31.6228]
+  gain = [150.3559, 101.3733, -21.1406,  81.9404, -44.7214]
+  gain = [231.2085, 102.3687, -43.5301, 289.3857, -44.7214]
+
+  model.klqr_x1 = gain[0]
+  model.klqr_v1 = gain[1]
+  model.klqr_x2 = gain[2]
+  model.klqr_v2 = gain[3]
+  model.klqr_i  = gain[4]
+  
+  console.log(model)
+
   UpdateParams()
 
   function play() {
@@ -539,7 +662,7 @@ init().then((_wasm) => {
       model.stepn(stepn);
       
       Paint();
-      updateChart()
+      UpdateChart()
       requestAnimationFrame(play);
     }, 1000 / fps);
   }
@@ -549,10 +672,10 @@ init().then((_wasm) => {
   Chart.register(...registerables);
 
   // Initialize an empty array for data
-  const dataX1:number[] = []
-  const dataX2:number[] = []
-  const dataSet:number[] = []
-  const labels:string[] = []
+  const dataX1:number[] = Array.from({ length: numel }, () => 0);
+  const dataX2:number[] = Array.from({ length: numel }, () => 0);
+  const dataRef:number[] = Array.from({ length: numel }, () => 0);
+  const labels:string[] = Array.from({ length: numel }, () => "0");
   
   // Create the initial chart
   const canvasg = document.getElementById("myChart") as HTMLCanvasElement;
@@ -578,7 +701,7 @@ init().then((_wasm) => {
         },
         {
           label: 'ref',
-          data: dataSet,
+          data: dataRef,
           fill: "#bbb",
           borderWidth: 1,
           pointRadius: 0
@@ -611,7 +734,7 @@ init().then((_wasm) => {
 
   let max = -1
   let min = 1
-  function updateChart() {
+  function UpdateChart() {
     
     const t  = Math.floor(model.time())
     const x1 = model.states.x1
@@ -620,25 +743,25 @@ init().then((_wasm) => {
 
     dataX1.push(x1)
     dataX2.push(x2)
-    dataSet.push(setp)
+    dataRef.push(setp)
     labels.push(`${t}`)
     
     while (dataX1.length > numel) {
       dataX1.shift()
       dataX2.shift()
-      dataSet.shift()
+      dataRef.shift()
       labels.shift()
     }
     
     chart.data.datasets[0].data = dataX1
     chart.data.labels = labels
 
-    max = Math.max(...dataX1, max)
-    min = Math.min(...dataX1, min)
+    max = Math.max(...dataX1, ...dataX2, max)
+    min = Math.min(...dataX1, ...dataX2, min)
     
     if (chart.options.scales?.y) {
-      chart.options.scales.y.suggestedMax = max
-      chart.options.scales.y.suggestedMin = min
+      chart.options.scales.y.max = max + 1
+      chart.options.scales.y.min = min - 1
     }
     
     // update label

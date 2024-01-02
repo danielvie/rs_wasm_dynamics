@@ -5,21 +5,30 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 
 #[wasm_bindgen]
-pub fn sum(a: i32, b: i32) -> i32 {
-    a + b
+#[derive(Clone, Copy)]
+pub enum ControlType {
+    LQR,
+    PID
 }
-
 
 #[wasm_bindgen]
-pub fn greet(name: &str) {
-    alert(name);
-}
+pub fn bla(control: ControlType) -> i32 { 
+    let res = match control { 
+        ControlType::LQR => 1,
+        ControlType::PID => 12,
+    };
+    res
+ }
 
 #[wasm_bindgen]
 extern {
     pub fn alert(s: &str);
 }
 
+#[wasm_bindgen(module = "/www/utils/consolelog.ts")]
+extern "C" {
+    fn consolelog(msg: String);
+}
 
 // model
 #[wasm_bindgen]
@@ -49,11 +58,24 @@ pub struct Model {
     _kp: f64, _ki: f64, _kd: f64,
     _step_time: f64,
     pub states: State,
+    pub cont: i64,
+
+    // controller
+    pub external_f: f64,
 
     // pid
     m_integral: f64, m_prev_error: f64, pub m_setpoint: f64, pub m_controle_on: bool,
     pub m_dt: f64,
     pub m_ki: f64, pub m_kp: f64, pub m_kd: f64,
+    pub controltype: ControlType,
+    
+    // lqr
+    pub klqr_x1: f64,
+    pub klqr_x2: f64,
+    pub klqr_v1: f64,
+    pub klqr_v2: f64,
+    pub klqr_i: f64,
+
 }
 
 #[wasm_bindgen]
@@ -64,14 +86,22 @@ impl Model {
             _kp: 3.0, _ki: 0.5, _kd: 10.0,
             _step_time: 2.0,
             states: State::new(),
+            cont: 0,
 
+            external_f: 0.0,
             m_integral: 0.0, m_prev_error: 0.0, m_setpoint: 1.0, m_controle_on: false,
             m_dt: 0.01,
             m_ki: 1.0, m_kp: 0.0, m_kd: 0.0,
+            controltype: ControlType::PID,
+            klqr_x1: 485.43,
+            klqr_x2: 458.34,
+            klqr_v1: -268.18,
+            klqr_v2: 277.26,
+            klqr_i: -31.62,
         }
     }
     
-    pub fn pid_compute(&mut self) -> f64 {
+    fn pid_compute(&mut self) -> f64 {
         let error:f64 = self.m_setpoint - self.states.x1;
         self.m_integral +=  error * self.m_dt;
         let derivative:f64 = -self.states.v1;
@@ -85,6 +115,74 @@ impl Model {
         }
     
         return u;
+    }
+    
+    fn lqr_compute(&mut self) -> f64 {
+        let error:f64    = self.m_setpoint - self.states.x1;
+        
+        if !self.m_controle_on {
+            return 0.0;
+        }
+
+        self.cont += 1;
+
+        // integral
+        self.m_integral += (error + self.m_prev_error)/2.0 * self.m_dt;
+        self.m_prev_error = error;
+
+        let error_ki = -self.klqr_i * self.m_integral;
+
+        // Use the Runge-Kutta method to update the integral
+        // let prev_integral = self.m_integral;
+        // let eval = error + self.m_prev_error;
+
+        // let k1 = eval / 2.0 * self.m_dt;
+        // let k2 = (eval / 2.0 + (eval + k1) / 2.0) * self.m_dt;
+        // let k3 = (eval / 2.0 + (eval + k2) / 2.0) * self.m_dt;
+        // let k4 = (eval + k3) * self.m_dt;
+
+        // self.m_integral += (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0;
+
+        // states
+        let k_times_states = self.klqr_x1 * self.states.x1 + self.klqr_x2 * self.states.x2 + self.klqr_v1 * self.states.v1 + self.klqr_v2 * self.states.v2;
+        let u = error_ki - k_times_states;
+        
+        if self.cont == 50 || self.cont == 51 || self.cont == 52 {
+            let message = format!(
+                "
+                u: {}\n 
+                ref: {}\n 
+                error: {}\n 
+                error_prev: {}\n 
+                integral: {}\n 
+                kstates: {}\n 
+                klqr [x1, v1, x2, v2]: [{}, {}, {}, {}];\n
+                states [x1, v1, x2, v2]: [{}, {}, {}, {}];\n
+                ", 
+                u, 
+                self.m_setpoint,
+                error,
+                self.m_prev_error,
+                self.m_integral,
+                k_times_states, 
+                self.klqr_x1, self.klqr_v1, self.klqr_x2, self.klqr_v2,
+                self.states.x1, self.states.v1, self.states.x2, self.states.v2);
+    
+            consolelog(message);
+        }
+
+        if self.m_controle_on == false {
+            return 0.0
+        }
+        u
+    }
+    
+    fn compute_control(&mut self, controltype: ControlType) -> f64 {
+        let u = match controltype {
+            ControlType::PID => self.pid_compute(),
+            ControlType::LQR => self.lqr_compute(),
+        };
+        u
     }
     
     pub fn print(&self) -> String {
@@ -111,22 +209,29 @@ impl Model {
     }
     
     fn system_dynamics(&mut self, _t: f64, states: &State) -> State {
-        let delta: f64 = states.x2 - states.x1;
     
         // compute control
         let mut f1: f64 = 0.0;
         if self.m_controle_on {
-            f1 = self.pid_compute();
+            f1 = self.compute_control(self.controltype)
         }
+        
+        f1 += self.external_f;
         
         // emulate step reference signal
         // if (m_t > m_step_time) {
         //     m_pid->enable(true);
         // }
     
+
+        // let deltax: f64 = states.x2 - states.x1;
+        // let deltav: f64 = states.v2 - states.v1;
+        
         // let a1: f64 = (-m_k*states.x1 - m_c*states.v1 + m_k*delta + m_c*(states.v2 - states.v1) + F1) / m_M1;
-        let a1: f64 = (-self.k*states.x1 - self.c*states.v1 + self.k*delta + self.c*(states.v2 - states.v1) + f1) / self.m1;
-        let a2: f64 = (-self.k*delta - self.c*(states.v2 - states.v1)) / self.m2;
+        // let a1: f64 = (-self.k*states.x1 - self.c*states.v1 + self.k*delta + self.c*(states.v2 - states.v1) + f1) / self.m1;
+
+        let a1: f64 = (-2.0*self.k*self.states.x1 - 2.0*self.c*self.states.v1 + self.k*self.states.x2 + self.c*self.states.v2 + f1) / self.m1;
+        let a2: f64 = (self.k*self.states.x1 + self.c*self.states.v1 - self.k*self.states.x2 - self.c*self.states.v2) / self.m2;
         
         State {x1: states.v1, x2: states.v2, v1: a1, v2: a2}
     }
@@ -165,5 +270,6 @@ impl Model {
         self.m2 = m2;
         self.c = c;
         self.k = k;
+        self.m_integral = 0.0;
     }
 }

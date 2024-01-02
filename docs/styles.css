@@ -530,10 +530,6 @@ video {
   margin-top: 0.5rem;
 }
 
-.mt-4 {
-  margin-top: 1rem;
-}
-
 .flex {
   display: flex;
 }
@@ -558,16 +554,8 @@ video {
   width: 22em;
 }
 
-.w-12 {
-  width: 3rem;
-}
-
 .gap-1 {
   gap: 0.25rem;
-}
-
-.gap-2 {
-  gap: 0.5rem;
 }
 
 .rounded-md {
