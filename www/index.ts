@@ -1,70 +1,15 @@
 import init, { Model, State, ControlType } from "mass_sim_dynamics";
 import { Chart, registerables } from 'chart.js';
-
-interface MyWasmModule {
-  add: (a: number, b: number) => number;
-  invert: (M: number, out: number) => void;
-  invert_matrix: (a: number, r: number) => void;
-  memory: WebAssembly.Memory;
-  _free: (array: any) => number;
-  _malloc: (pointer: number) => number;
-}
-
-async function loadCModule() {
-  return fetch("add.wasm")
-    .then((res) => res.arrayBuffer())
-    .then((buf) => WebAssembly.instantiate(buf, {}))
-    .then((was) => {
-      const instance = was.instance;
-      return instance.exports as unknown as MyWasmModule;
-    });
-}
-
-declare const Module: any; 
+import {DrawGrid, DrawGround , DrawU, DrawRef, DrawArrow, DrawBody, DrawDamper, DrawSpring } from "./utils/draw";
 
 init().then((_wasm) => {
 
-  loadCModule().then((wasmModule) => {
-
-    console.log(wasmModule)
-
-    // Example usage for _invert
-    const inputMatrix = new Float64Array([2, 5, 11, 3, 7, 9, 5, 11, 0]);
-
-    console.log("input matrix: ", inputMatrix)
-
-    // Allocate memory in the wasm module
-    const inputArrayPointer = wasmModule._malloc(inputMatrix.length * Float64Array.BYTES_PER_ELEMENT);
-    new Float64Array(wasmModule.memory.buffer, inputArrayPointer, inputMatrix.length).set(inputMatrix);
-
-    // Call C function
-    const outputArrayPointer = wasmModule._malloc(inputMatrix.length * Float64Array.BYTES_PER_ELEMENT);
-     
-    wasmModule.invert(inputArrayPointer, outputArrayPointer);
-    console.log("outputarraypointer: ", outputArrayPointer)
-
-    // Read result of computation
-    const outputArray = new Float64Array(wasmModule.memory.buffer, outputArrayPointer, 19).slice();
-    console.log("Inverted Result:", outputArray);
-
-    // Free memory for the allocated arrays
-    wasmModule._free(inputArrayPointer);
-    wasmModule._free(outputArrayPointer);
-  })
-
-
-  // const worldWidth = 350;
-  // const worldHeight = 100;
   const canvas = document.getElementById("model-canvas") as HTMLCanvasElement;
   canvas.height = 120;
   canvas.width = 350;
   const ctx = canvas.getContext("2d");
 
   const timer = document.getElementById("timer");
-  const radius = 7
-  const wbody = 40
-  const hbody = 40
-  const rbody = 2
 
   const COLOR = {
     "BLUE": "#517acc",
@@ -74,33 +19,10 @@ init().then((_wasm) => {
 
   let stepn = 20;
   let numel = 300;
-  
-
-  // bla
-  const bla = document.getElementById("bla")
-  if (bla) {
-    console.log(_wasm.bla(ControlType.PID))
-  }
-
-
-
-
-  // let isDragging = false
-  let lastX = 0
-  let lastY = 0
-
-  // canvas.addEventListener("mousedown", (event: MouseEvent) => {
-  //   isDragging = true
-  //   lastX = event.clientX - canvas.getBoundingClientRect().left
-  //   lastY = event.clientX - canvas.getBoundingClientRect().top
-  // })
-
-  // canvas.addEventListener("mouseup", (_event: MouseEvent) => {
-  //   isDragging = false
-  // })
+  let lastX
+  let lastY
 
   canvas.addEventListener("click", (event: MouseEvent) => {
-    // if (isDragging) {
       const currentX = event.clientX - canvas.getBoundingClientRect().left
       const currentY = event.clientX - canvas.getBoundingClientRect().top
       
@@ -113,321 +35,7 @@ init().then((_wasm) => {
 
       const setpoint_in = document.getElementById("value-setpoint") as HTMLInputElement      
       setpoint_in.value = `${model.m_setpoint}`
-    // }
   })
-
-  
-  // canvas.addEventListener("click", (event:MouseEvent) => {
-  //   const x = event.clientX - canvas.getBoundingClientRect().left;
-  //   const y = event.clientY - canvas.getBoundingClientRect().top;
-  //   console.log(`${x}, ${y}`)
-  // })
-  
-  function DrawSpring(xleft: number, xright: number, color: string) {
-    if (!ctx) { return }
-    
-
-
-
-    // params
-    ctx.strokeStyle = color
-    ctx.lineWidth = 2
-
-    // draw spring 
-    const L = (xright - xleft)
-    const w = Math.max(20 * L / 100, 8)
-    
-    const left = (L - w) / 2.0 + xleft
-    const right = left + w
-
-    const groundTop = GetGround()[0]
-    const bodyBottom = groundTop - radius*2
-    const bodyTop    = bodyBottom - hbody
-
-    const y = bodyBottom - (bodyBottom - bodyTop)*5/7
-
-    const dy = 5.0
-    const dx = w/12.0
-
-    ctx.beginPath()
-    ctx.moveTo(left, y)
-
-    ctx.lineTo(left +  1*dx, y-dy)
-    ctx.lineTo(left +  3*dx, y+dy)
-    ctx.lineTo(left +  5*dx, y-dy)
-    ctx.lineTo(left +  7*dx, y+dy)
-    ctx.lineTo(left +  9*dx, y-dy)
-    ctx.lineTo(left + 11*dx, y+dy)
-    ctx.lineTo(left + 12*dx, y)
-    
-    ctx.moveTo(xleft, y)
-    ctx.lineTo(left, y)
-    ctx.moveTo(right, y)
-    ctx.lineTo(xright, y)
-
-    ctx.closePath()
-    ctx.stroke()
-  }
-
-  function DrawDamper(xleft: number, xright: number, color: string) {
-    if (!ctx) { return }
-    
-    // params
-    ctx.strokeStyle = color
-    ctx.lineWidth = 2
-
-    // draw spring 
-    let L = (xright - xleft)
-    let w = 15
-    
-    let left = (L - w) / 2.0 + xleft
-    let right = left + w
-
-    const groundTop = GetGround()[0]
-    const bodyBottom = groundTop - radius*2
-    const bodyTop    = bodyBottom - hbody
-
-    const y = bodyBottom - (bodyBottom - bodyTop)*2/7
-
-    const dy = 5.0
-    const dx = w/2.0
-
-    ctx.beginPath()
-    ctx.moveTo(right, y + dy)
-    ctx.lineTo(left, y + dy)
-    ctx.lineTo(left, y - dy)
-    ctx.lineTo(right, y - dy)
-
-    ctx.moveTo(left + dx, y + dy)
-    ctx.lineTo(left + dx, y - dy)
-    
-    ctx.moveTo(xleft, y)
-    ctx.lineTo(left, y)
-
-    ctx.moveTo(right - dx, y)
-    ctx.lineTo(xright, y)
-
-    ctx.closePath()
-    ctx.stroke()
-  }
-
-  function DrawGrid() {
-    if (!ctx) { return }
-    
-    ctx.beginPath()
-    
-    ctx.strokeStyle = "#e0e0e0"
-    ctx.lineWidth = 1
-
-    const grid = 10
-    let xi = 0
-
-    while (xi < canvas.width) {
-      xi += grid
-      ctx.moveTo(xi, 0)
-      ctx.lineTo(xi, canvas.height)
-    }
-
-    ctx.closePath()
-    ctx.stroke()
-  }
-  
-  function DrawGround(y: number, h: number) {
-    if (!ctx) { return }
-
-    // ground
-    const [groundTop, groundBottom] = GetGround()
-
-    ctx.beginPath()
-    ctx.strokeStyle = "#777"
-    ctx.moveTo(0, groundTop)
-    ctx.lineTo(canvas.width, groundTop)
-    ctx.closePath()
-    ctx.stroke()
-    
-    ctx.beginPath()
-    ctx.lineWidth = 1
-    
-    let xi = 0
-    while (xi < canvas.width + 8) {
-      ctx.moveTo(xi, groundTop)
-      ctx.lineTo(xi - 8, groundBottom)
-      
-      xi += 5 
-    }
-
-    ctx.closePath()
-    ctx.stroke()
-  }
-  
-  function GetGround(): number[] {
-    const groundTop = 85
-    const groundBottom = groundTop + 7
-
-    return [groundTop, groundBottom]
-  }
-
-  function DrawBody(x: number, color: string) {
-    if (!ctx) { return }
-
-    // get ground
-    const groundTop = GetGround()[0]
-
-    // wheels
-    ctx.beginPath()
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color
-    ctx.fillStyle += "88"
-    ctx.arc(x + wbody*2/7, groundTop - radius, radius, 0, 2*Math.PI)
-
-    ctx.closePath()
-    ctx.fill()
-    ctx.stroke()
-
-    ctx.beginPath()
-
-    ctx.strokeStyle = color;
-    ctx.fillStyle += "88"
-    ctx.arc(x + wbody*5/7, groundTop - radius, radius, 0, 2*Math.PI)
-
-    ctx.closePath()
-    ctx.fill()
-    ctx.stroke()
-
-    // box
-    const y = groundTop - hbody - radius*2
-    ctx.fillStyle = color;
-
-    ctx.beginPath();
-    ctx.moveTo(x + rbody, y);
-    ctx.lineTo(x + wbody - rbody, y);
-    ctx.quadraticCurveTo(x + wbody, y, x + wbody, y + rbody);
-    ctx.lineTo(x + wbody, y + hbody - rbody);
-    ctx.quadraticCurveTo(x + wbody, y + hbody, x + wbody - rbody, y + hbody);
-    ctx.lineTo(x + rbody, y + hbody);
-    ctx.quadraticCurveTo(x, y + hbody, x, y + hbody - rbody);
-    ctx.lineTo(x, y + rbody);
-    ctx.quadraticCurveTo(x, y, x + rbody, y);
-    ctx.closePath();
-    
-    ctx.fill();
-
-    
-  }
-  
-  function DrawArrow(name: string, x: number, color: string) {
-    if (!ctx) { return }
-
-    ctx.strokeStyle = color
-    ctx.lineWidth = 2
-
-    const [groundTop, groundBottom] = GetGround()
-    const dy = 13
-
-    ctx.beginPath()
-    
-    let yi = 0
-    const spacing = 5
-    const line = 8
-    while(yi < groundTop) {
-      ctx.moveTo(x, yi)
-      yi += line
-      
-      yi = Math.min(yi, groundTop-1)
-      ctx.lineTo(x, yi)
-      yi += spacing
-    }
-
-    // draw line bottom
-    ctx.moveTo(x, groundBottom)
-    ctx.lineTo(x, canvas.height)
-
-    // draw arrow
-    const y = canvas.height - dy
-    const ddy = 7
-    const ddx = 7
-
-    ctx.moveTo(x, y)
-    ctx.lineTo(x + 20, y)
-    ctx.lineTo(x + 20 - ddx, canvas.height - dy - ddy)
-    ctx.moveTo(x + 20, canvas.height - dy)
-    ctx.lineTo(x + 20 - ddx, canvas.height - dy + ddy)
-    ctx.closePath()
-    ctx.stroke()
-    
-    ctx.beginPath()
-    ctx.fillStyle = color
-    ctx.font = "20px monospace"
-    ctx.fillText(name, x + 25, canvas.height - dy + 7)
-  }
-  
-  function DrawU(x: number) {
-    if (!ctx) { return }
-
-    const y = 16
-    const dx = 7
-    const dy = 7
-
-    const color = "#aaa"
-
-    ctx.beginPath()
-
-    ctx.strokeStyle = color
-    ctx.lineWidth = 2
-
-    ctx.moveTo(x, y)
-    ctx.lineTo(x + 20, y)
-
-    ctx.moveTo(x + 20, y)
-    ctx.lineTo(x + 20 - dx, y - dy)
-    ctx.moveTo(x + 20, y)
-    ctx.lineTo(x + 20 - dx, y + dy)
-
-    ctx.closePath()
-    ctx.stroke()
-
-    ctx.beginPath()
-    ctx.fillStyle = color
-    ctx.font = "20px monospace"
-    ctx.fillText("F", x + 25, y + 5)
-
-  }
-
-  function DrawRef(x: number) {
-    if (!ctx) { return }
-    
-    ctx.strokeStyle = "#fccd9d"
-    ctx.lineWidth = 3
-    ctx.beginPath()
-    
-    const groundTop = GetGround()[0]
-
-    const drie = 5
-    ctx.moveTo(x-drie, 0)
-    ctx.lineTo(x, drie)
-    ctx.lineTo(x+drie, 0)
-
-    ctx.lineWidth =  3
-    let y = drie
-    const spacing = 5
-    const line =15
-    
-    while (y < groundTop) {
-      y += spacing
-      ctx.moveTo(x, y)
-      y += line
-      ctx.lineTo(x, y)
-    }
-    
-    ctx.closePath()
-    ctx.stroke()
-
-    ctx.beginPath()
-    ctx.clearRect(x-drie, groundTop, drie*2, drie*4)
-    ctx.closePath()
-    ctx.fill()
-
-  }
 
   function Paint() {
     ctx?.clearRect(0, 0, canvas.width, canvas.height); 
@@ -500,7 +108,6 @@ init().then((_wasm) => {
   });
   
   function ControlStep(value: number) {
-
     if (!controlstep_btn) { return }
 
     model.external_f = value
@@ -524,16 +131,6 @@ init().then((_wasm) => {
       controltype_btn.innerText = "LQR"
       model.controltype = ControlType.LQR
     }
-  }
-  
-  function ControlFlip() {
-    const in_setpoint = document.getElementById("value-setpoint") as HTMLInputElement
-    if (!in_setpoint) { return }
-
-    const setpoint = parseFloat(in_setpoint.value);
-    in_setpoint.value = `${-setpoint}`
-
-    UpdateParams()
   }
   
   function UpdateParams() {
@@ -621,19 +218,10 @@ init().then((_wasm) => {
     UpdateParams()
   }
   
-  document.addEventListener("keydown", (e) => {
-    switch (e.code) {
-      case "Space":
-        reset_btn?.click();
-        
-        break;
-    }
-  });
-
   let model = Model.new();
   model.states = State.from(x1_0, x2_0, v1_0, v2_0);
 
-  model.controltype = ControlType.LQR
+  model.controltype = ControlType.PID
 
   let gain = [184.7561, 142.5969, -55.7884, 106.9744, -31.6228]
   // gain = [75.30, 46.25, -1.70, 38.44, -31.6228]
@@ -650,7 +238,7 @@ init().then((_wasm) => {
 
   UpdateParams()
 
-  function play() {
+  function Main() {
     const fps = 100
     setTimeout(() => {
       ctx?.clearRect(0, 0, canvas.width, canvas.height);
@@ -663,11 +251,11 @@ init().then((_wasm) => {
       
       Paint();
       UpdateChart()
-      requestAnimationFrame(play);
+      requestAnimationFrame(Main);
     }, 1000 / fps);
   }
 
-  play();
+  Main();
 
   Chart.register(...registerables);
 
@@ -730,12 +318,9 @@ init().then((_wasm) => {
     },
   });
   
-  
-
   let max = -1
   let min = 1
   function UpdateChart() {
-    
     const t  = Math.floor(model.time())
     const x1 = model.states.x1
     const x2 = model.states.x2
