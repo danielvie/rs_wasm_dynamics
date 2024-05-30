@@ -7,10 +7,9 @@ init().then((_wasm) => {
   const canvas = document.getElementById("model-canvas") as HTMLCanvasElement;
   canvas.height = 120;
   canvas.width = 350;
+
   const ctx = canvas.getContext("2d");
-
   const timer = document.getElementById("timer");
-
   const COLOR = {
     "BLUE": "#517acc",
     "LITE_BLUE": "#7ba1ed",
@@ -20,19 +19,112 @@ init().then((_wasm) => {
   let stepn = 20;
   let numel = 300;
   let lastX
-  let lastY
+
+  let x1_0 = 0.0;
+  let x2_0 = 0.0;
+  let v1_0 = 0.0;
+  let v2_0 = 0.0;
+  let m1 = 1.0;
+  let m2 = 1.0;
+  let c = 1.0;
+  let k = 1.0;
+
+  const reset_btn = document.getElementById("ok-btn");
+  const fity_btn = document.getElementById("fit-y-btn");
+  const paramset_btn = document.getElementById("param-set-btn");
+  const controlon_btn = document.getElementById("control-on-btn");
+  const controltype_btn = document.getElementById("controltype-btn");
+  const controlstep_btn = document.getElementById("controlstep-btn");
+
+  let model = Model.new();
+  model.states = State.from(x1_0, x2_0, v1_0, v2_0);
+
+  model.controltype = ControlType.PID
+
+  let gain = [184.7561, 142.5969, -55.7884, 106.9744, -31.6228]
+  // gain = [75.30, 46.25, -1.70, 38.44, -31.6228]
+  gain = [150.3559, 101.3733, -21.1406,  81.9404, -44.7214]
+  gain = [231.2085, 102.3687, -43.5301, 289.3857, -44.7214]
+
+  model.klqr_x1 = gain[0]
+  model.klqr_v1 = gain[1]
+  model.klqr_x2 = gain[2]
+  model.klqr_v2 = gain[3]
+  model.klqr_i  = gain[4]
+  
+  console.log(model)
+
+  let chart_max = -1
+  let chart_min = 1
+
+  Chart.register(...registerables);
+
+  // Initialize an empty array for data
+  const dataX1:number[] = Array.from({ length: numel }, () => 0);
+  const dataX2:number[] = Array.from({ length: numel }, () => 0);
+  const dataRef:number[] = Array.from({ length: numel }, () => 0);
+  const labels:string[] = Array.from({ length: numel }, () => "0");
+  
+  // Create the initial chart
+  const canvasg = document.getElementById("myChart") as HTMLCanvasElement;
+  canvasg.width = 300
+  canvasg.height = 250
+  const chart = new Chart(canvasg, {
+    type: "line",
+    data: {
+      // labels: labels,
+      datasets: [
+        {
+          label: 'X1',
+          data: dataX1,
+          borderWidth: 2,
+          pointRadius: 0
+        },
+        {
+          label: 'X2',
+          data: dataX2,
+          fill: "#235fd1",
+          borderWidth: 2,
+          pointRadius: 0
+        },
+        {
+          label: 'ref',
+          data: dataRef,
+          fill: "#bbb",
+          borderWidth: 1,
+          pointRadius: 0
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          labels: {
+            font: {
+              family: "monospace",
+              size: 11,
+            },
+            boxWidth: 15,
+          }
+        }
+      },
+      scales: {
+        y: {
+          // suggestedMax: 10,
+          // suggestedMin: -10,
+        },
+      },
+    },
+  });
+
+
 
   canvas.addEventListener("click", (event: MouseEvent) => {
       const currentX = event.clientX - canvas.getBoundingClientRect().left
-      const currentY = event.clientX - canvas.getBoundingClientRect().top
       
       lastX = currentX
-      lastY = currentY
-      
-      console.log(lastX)
-      
       model.m_setpoint = (lastX - 100)/10
-
       const setpoint_in = document.getElementById("value-setpoint") as HTMLInputElement      
       setpoint_in.value = `${model.m_setpoint}`
   })
@@ -62,22 +154,6 @@ init().then((_wasm) => {
     DrawBody(x1Block, COLOR.BLUE);
     DrawBody(x2Block, COLOR.PINK);
   }
-
-  let x1_0 = 0.0;
-  let x2_0 = 0.0;
-  let v1_0 = 0.0;
-  let v2_0 = 0.0;
-  let m1 = 1.0;
-  let m2 = 1.0;
-  let c = 1.0;
-  let k = 1.0;
-
-  const reset_btn = document.getElementById("ok-btn");
-  const fity_btn = document.getElementById("fit-y-btn");
-  const paramset_btn = document.getElementById("param-set-btn");
-  const controlon_btn = document.getElementById("control-on-btn");
-  const controltype_btn = document.getElementById("controltype-btn");
-  const controlstep_btn = document.getElementById("controlstep-btn");
 
   reset_btn?.addEventListener("click", () => {
     Reset()
@@ -183,9 +259,9 @@ init().then((_wasm) => {
   }
   
   function FitY() {
-    max = Math.max(...dataX1)
-    min = Math.min(...dataX1)
-    console.log(`min: ${min}, max: ${max}`)
+    chart_max = Math.max(...dataX1)
+    chart_min = Math.min(...dataX1)
+    console.log(`min: ${chart_min}, max: ${chart_max}`)
   }
   
   function ControlON(value:boolean) {
@@ -218,108 +294,6 @@ init().then((_wasm) => {
     UpdateParams()
   }
   
-  let model = Model.new();
-  model.states = State.from(x1_0, x2_0, v1_0, v2_0);
-
-  model.controltype = ControlType.PID
-
-  let gain = [184.7561, 142.5969, -55.7884, 106.9744, -31.6228]
-  // gain = [75.30, 46.25, -1.70, 38.44, -31.6228]
-  gain = [150.3559, 101.3733, -21.1406,  81.9404, -44.7214]
-  gain = [231.2085, 102.3687, -43.5301, 289.3857, -44.7214]
-
-  model.klqr_x1 = gain[0]
-  model.klqr_v1 = gain[1]
-  model.klqr_x2 = gain[2]
-  model.klqr_v2 = gain[3]
-  model.klqr_i  = gain[4]
-  
-  console.log(model)
-
-  UpdateParams()
-
-  function Main() {
-    const fps = 100
-    setTimeout(() => {
-      ctx?.clearRect(0, 0, canvas.width, canvas.height);
-
-      if (timer) {
-        timer.innerText = `t: ${model.time().toFixed(1)}`;
-      }
-
-      model.stepn(stepn);
-      
-      Paint();
-      UpdateChart()
-      requestAnimationFrame(Main);
-    }, 1000 / fps);
-  }
-
-  Main();
-
-  Chart.register(...registerables);
-
-  // Initialize an empty array for data
-  const dataX1:number[] = Array.from({ length: numel }, () => 0);
-  const dataX2:number[] = Array.from({ length: numel }, () => 0);
-  const dataRef:number[] = Array.from({ length: numel }, () => 0);
-  const labels:string[] = Array.from({ length: numel }, () => "0");
-  
-  // Create the initial chart
-  const canvasg = document.getElementById("myChart") as HTMLCanvasElement;
-  canvasg.width = 300
-  canvasg.height = 250
-  const chart = new Chart(canvasg, {
-    type: "line",
-    data: {
-      // labels: labels,
-      datasets: [
-        {
-          label: 'X1',
-          data: dataX1,
-          borderWidth: 2,
-          pointRadius: 0
-        },
-        {
-          label: 'X2',
-          data: dataX2,
-          fill: "#235fd1",
-          borderWidth: 2,
-          pointRadius: 0
-        },
-        {
-          label: 'ref',
-          data: dataRef,
-          fill: "#bbb",
-          borderWidth: 1,
-          pointRadius: 0
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          labels: {
-            font: {
-              family: "monospace",
-              size: 11,
-            },
-            boxWidth: 15,
-          }
-        }
-      },
-      scales: {
-        y: {
-          // suggestedMax: 10,
-          // suggestedMin: -10,
-        },
-      },
-    },
-  });
-  
-  let max = -1
-  let min = 1
   function UpdateChart() {
     const t  = Math.floor(model.time())
     const x1 = model.states.x1
@@ -341,12 +315,12 @@ init().then((_wasm) => {
     chart.data.datasets[0].data = dataX1
     chart.data.labels = labels
 
-    max = Math.max(...dataX1, ...dataX2, max)
-    min = Math.min(...dataX1, ...dataX2, min)
+    chart_max = Math.max(...dataX1, ...dataX2, chart_max)
+    chart_min = Math.min(...dataX1, ...dataX2, chart_min)
     
     if (chart.options.scales?.y) {
-      chart.options.scales.y.max = max + 1
-      chart.options.scales.y.min = min - 1
+      chart.options.scales.y.max = chart_max + 1
+      chart.options.scales.y.min = chart_min - 1
     }
     
     // update label
@@ -363,4 +337,23 @@ init().then((_wasm) => {
     chart.update('none')
   }
 
+  function Main() {
+    const fps = 100
+    setTimeout(() => {
+      ctx?.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (timer) {
+        timer.innerText = `t: ${model.time().toFixed(1)}`;
+      }
+
+      model.stepn(stepn);
+      
+      Paint();
+      UpdateChart()
+      requestAnimationFrame(Main);
+    }, 1000 / fps);
+  }
+
+  UpdateParams();
+  Main();
 })
